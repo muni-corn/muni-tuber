@@ -26,11 +26,11 @@
 
             nativeBuildInputs = with pkgs; [
               rust
-              pkgconfig
+              pkg-config
               llvmPackages.bintools
             ];
             buildInputs = with pkgs; [
-              alsaLib
+              alsa-lib
               clang
               libxkbcommon
               udev
@@ -38,6 +38,7 @@
               xorg.libXcursor
               xorg.libXi
               xorg.libXrandr
+              xorg.libX11
               wayland
             ];
           in
