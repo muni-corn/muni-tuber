@@ -27,18 +27,20 @@
             nativeBuildInputs = with pkgs; [
               rust
               pkg-config
-              llvmPackages.bintools
             ];
             buildInputs = with pkgs; [
               alsa-lib
-              clang
-              libxkbcommon
               udev
               vulkan-loader
+
+              # x11
+              xorg.libX11
               xorg.libXcursor
               xorg.libXi
               xorg.libXrandr
-              xorg.libX11
+
+              # wayland
+              libxkbcommon
               wayland
             ];
           in
@@ -62,7 +64,8 @@
 
             # `nix develop`
             devShell = with pkgs; mkShell {
-              packages = nativeBuildInputs ++ buildInputs ++ [
+              inherit nativeBuildInputs buildInputs;
+              packages = [
                 cargo-watch
                 clippy
                 rust-analyzer
