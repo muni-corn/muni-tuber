@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 bevy = {version = "0.10", features = ["wayland"]} # A refreshingly simple data-driven game engine and app framework
 cpal = "0.15.2"
+rand = "0.8.5"
