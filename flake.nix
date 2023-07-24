@@ -4,28 +4,26 @@
   inputs = {
     naersk.url = "github:nmattia/naersk/master";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    rust-overlay.url = "github:oxalica/rust-overlay";
+    fenix.url = "github:nix-community/fenix";
     utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, utils, naersk, rust-overlay }:
+  outputs = { self, nixpkgs, utils, fenix, naersk }:
     let
       appName = "muni-tuber";
 
-      overlays = [ (import rust-overlay) ];
       out = utils.lib.eachDefaultSystem
         (system:
           let
-            pkgs = import nixpkgs { inherit system overlays; };
+            pkgs = import nixpkgs { inherit system; };
 
-            rust = pkgs.rust-bin.nightly.latest.default;
+            rust = fenix.packages.${system}.complete;
             naersk-lib = naersk.lib."${system}".override {
-              cargo = rust;
-              rustc = rust;
+              inherit (rust) cargo rustc;
             };
 
             nativeBuildInputs = with pkgs; [
-              rust
+              rust.toolchain
               pkg-config
             ];
             buildInputs = with pkgs; [
@@ -65,12 +63,6 @@
             # `nix develop`
             devShell = with pkgs; mkShell {
               inherit nativeBuildInputs buildInputs;
-              packages = [
-                cargo-watch
-                clippy
-                rust-analyzer
-                rustfmt
-              ];
               LD_LIBRARY_PATH = lib.makeLibraryPath buildInputs;
             };
           });
