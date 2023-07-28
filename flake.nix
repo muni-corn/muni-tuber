@@ -68,6 +68,7 @@
         devShell = with pkgs;
           mkShell {
             inherit nativeBuildInputs buildInputs;
+            packages = [rust.rust-analyzer];
             LD_LIBRARY_PATH = lib.makeLibraryPath buildInputs;
           };
       });
