@@ -21,6 +21,7 @@ fn main() {
         .insert_resource(WinitSettings::game())
         .add_startup_system(setup)
         .add_system(animate_with_audio)
+        .add_system(breath_animation_system)
         .run();
 }
 
@@ -41,29 +42,17 @@ fn setup(
     });
 }
 
-// fn animate_sprite_system(
-//     time: Res<Time>,
-//     texture_atlases: Res<Assets<TextureAtlas>>,
-//     mut query: Query<(
-//         &mut SpriteAnimation,
-//         &Handle<TextureAtlas>,
-//         &mut TextureAtlasSprite,
-//     )>,
-//     audio_state: Res<AudioState>,
-// ) {
-//     println!(audio_state);
-//     for (mut sprite_animation, texture_atlas_handle, mut sprite) in query.iter_mut() {
-//         sprite_animation.timer.tick(time.delta());
-
-//         if sprite_animation.timer.finished() {
-//             sprite_animation.frame += rand::thread_rng().gen_range(1..=2);
-
-//             if let Some(texture_atlas) = texture_atlases.get(texture_atlas_handle) {
-//                 sprite.index = sprite_animation.frame % texture_atlas.textures.len();
-//             }
-//         }
-//     }
-// }
+fn breath_animation_system(
+    time: Res<Time>,
+    mut query: Query<&mut Transform, With<TextureAtlasSprite>>,
+) {
+    for mut transform in query.iter_mut() {
+        let breath_value = time.elapsed_seconds().sin();
+        let scaled = breath_value / 100.0;
+        *transform = Transform::from_scale(Vec3::new(1.0 - scaled, 1.0 + scaled, 1.0))
+            .with_translation(Vec3::new(0.0, scaled * 200.0, 0.0));
+    }
+}
 
 const HALF_SPEAK_THRESHOLD_DBFS: f32 = -30.0;
 const FULL_SPEAK_THRESHOLD_DBFS: f32 = -20.0;
