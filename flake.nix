@@ -22,7 +22,7 @@
       (system: let
         pkgs = import nixpkgs {inherit system;};
 
-        rust = fenix.packages.${system}.complete;
+        rust = fenix.packages.${system}.stable;
         naersk-lib = naersk.lib."${system}".override {
           inherit (rust) cargo rustc;
         };
