@@ -45,6 +45,10 @@
           # wayland
           libxkbcommon
           wayland
+
+          # gl
+          libGL
+          libGLU
         ];
       in {
         # `nix build`

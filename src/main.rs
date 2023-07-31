@@ -1,115 +1,51 @@
-use bevy::{prelude::*, winit::WinitSettings};
-use cpal::{
-    traits::{DeviceTrait, HostTrait, StreamTrait},
-    HostId, InputCallbackInfo, Sample, SampleFormat, Stream,
+use std::time::Instant;
+
+use eframe::{
+    egui::{self, CentralPanel, Context, Vec2},
+    Frame,
 };
-use rand::Rng;
+use egui_extras::RetainedImage;
 
-use std::sync::{Arc, Mutex};
-
-#[derive(Default, Resource)]
-struct AudioState {
-    volume: Arc<Mutex<f32>>,
+fn main() -> Result<(), eframe::Error> {
+    let options = eframe::NativeOptions::default();
+    eframe::run_native(
+        "Show an image with eframe/egui",
+        options,
+        Box::new(|_cc| Box::<MuniTuberApp>::default()),
+    )
 }
 
-fn main() {
-    let (audio_state, stream) = start_default_stream();
-
-    App::new()
-        .insert_resource(audio_state)
-        .add_plugins(DefaultPlugins)
-        .insert_resource(WinitSettings::game())
-        .add_startup_system(setup)
-        .add_system(animate_with_audio)
-        .add_system(breath_animation_system)
-        .run();
+struct MuniTuberApp {
+    start: Instant,
+    quiet: RetainedImage,
 }
 
-fn setup(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-) {
-    let texture_handle = asset_server.load("speaking_atlas.png");
-    let texture_atlas =
-        TextureAtlas::from_grid(texture_handle, Vec2::new(200.0, 200.0), 3, 1, None, None);
-    let texture_atlas_handle = texture_atlases.add(texture_atlas);
-
-    commands.spawn(Camera2dBundle::default());
-    commands.spawn(SpriteSheetBundle {
-        texture_atlas: texture_atlas_handle,
-        ..Default::default()
-    });
-}
-
-fn breath_animation_system(
-    time: Res<Time>,
-    mut query: Query<&mut Transform, With<TextureAtlasSprite>>,
-) {
-    for mut transform in query.iter_mut() {
-        let breath_value = time.elapsed_seconds().sin();
-        let scaled = breath_value / 100.0;
-        *transform = Transform::from_scale(Vec3::new(1.0 - scaled, 1.0 + scaled, 1.0))
-            .with_translation(Vec3::new(0.0, scaled * 200.0, 0.0));
-    }
-}
-
-const HALF_SPEAK_THRESHOLD_DBFS: f32 = -30.0;
-const FULL_SPEAK_THRESHOLD_DBFS: f32 = -20.0;
-
-fn animate_with_audio(audio_state: ResMut<AudioState>, mut query: Query<&mut TextureAtlasSprite>) {
-    if let Some(mut sprite) = query.iter_mut().next() {
-        let volume = *audio_state.volume.lock().unwrap();
-        if volume > FULL_SPEAK_THRESHOLD_DBFS {
-            sprite.index = 2;
-        } else if volume > HALF_SPEAK_THRESHOLD_DBFS {
-            sprite.index = 1;
-        } else {
-            sprite.index = 0;
+impl Default for MuniTuberApp {
+    fn default() -> Self {
+        Self {
+            start: Instant::now(),
+            quiet: RetainedImage::from_image_bytes(
+                "quiet",
+                include_bytes!("assets/png_muni_quiet.png"),
+            )
+            .unwrap(),
         }
     }
 }
 
-fn u16_to_dbfs(volume: u16) -> f32 {
-    let normalized = volume as f32 / u16::MAX as f32;
-    20.0 * normalized.log10()
-}
-
-fn start_default_stream() -> (AudioState, Stream) {
-    let host = cpal::default_host();
-
-    let device = host
-        .default_input_device()
-        .expect("no input device available");
-
-    let config = device
-        .default_input_config()
-        .expect("no input config available");
-
-    let sample_format = config.sample_format();
-
-    let volume = Arc::new(Mutex::new(0.0));
-    let volume_clone = volume.clone();
-    let err_fn = |e| eprintln!("error occurred on stream: {}", e);
-    let stream = match sample_format {
-        SampleFormat::F32 => device.build_input_stream(
-            &config.into(),
-            move |data: &[f32], _: &InputCallbackInfo| {
-                let max_sample_value = data
-                    .iter()
-                    .map(|sample| (sample.abs() * u16::MAX as f32) as u16)
-                    .max()
-                    .unwrap_or(0);
-                *volume_clone.lock().unwrap() = u16_to_dbfs(max_sample_value)
-            },
-            err_fn,
-            None,
-        ),
-        _ => unimplemented!(),
+impl eframe::App for MuniTuberApp {
+    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+        CentralPanel::default().show(ctx, |ui| {
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::Max), |ui| {
+                let breath_value = self.start.elapsed().as_secs_f32().sin() / 75.0;
+                let breath_scale_x = 1.0 - breath_value;
+                let breath_scale_y = 1.0 + breath_value;
+                self.quiet.show_size(
+                    ui,
+                    Vec2::new(200.0 * breath_scale_x, 200.0 * breath_scale_y),
+                )
+            });
+        });
+        ctx.request_repaint();
     }
-    .unwrap();
-
-    stream.play().expect("failed to play stream");
-
-    return (AudioState { volume }, stream);
 }

@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = {version = "0.10", features = ["wayland"]} # A refreshingly simple data-driven game engine and app framework
 cpal = "0.15.2"
+eframe = {version = "0.22.0", features = ["wayland", "wgpu"]}
+egui_extras = {version = "0.22.0", features = ["image"]}
 rand = "0.8.5"
