@@ -9,7 +9,7 @@ use egui_extras::RetainedImage;
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions::default();
     eframe::run_native(
-        "Show an image with eframe/egui",
+        "muni-tuber",
         options,
         Box::new(|_cc| Box::<MuniTuberApp>::default()),
     )
