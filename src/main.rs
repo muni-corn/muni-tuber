@@ -2,7 +2,7 @@ mod audio;
 
 use cpal::Stream;
 use eframe::{
-    egui::{self, CentralPanel, Context, Vec2},
+    egui::{self, CentralPanel, Context, Ui, Vec2},
     Frame,
 };
 use egui_extras::RetainedImage;
@@ -56,25 +56,33 @@ const SIZE: Vec2 = Vec2::new(300.0, 300.0);
 const HALF_SPEAK_THRESHOLD_DBFS: f32 = -30.0;
 const FULL_SPEAK_THRESHOLD_DBFS: f32 = -20.0;
 
+impl MuniTuberApp {
+    fn paint(&mut self, ctx: &Context, ui: &mut Ui) {
+        let breath_value = self.start.elapsed().as_secs_f32().sin() / 75.0;
+        let breath_scale_x = 1.0 - breath_value;
+        let breath_scale_y = 1.0 + breath_value;
+
+        // determine head_base to use
+        let head_base = {
+            let volume = *self.audio_state.volume.lock().unwrap();
+            if volume > FULL_SPEAK_THRESHOLD_DBFS {
+                &self.full_speak
+            } else if volume > HALF_SPEAK_THRESHOLD_DBFS {
+                &self.half_speak
+            } else {
+                &self.quiet
+            }
+        };
+
+        head_base.show_size(ui, SIZE * Vec2::new(breath_scale_x, breath_scale_y));
+    }
+}
+
 impl eframe::App for MuniTuberApp {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         CentralPanel::default().show(ctx, |ui| {
             ui.with_layout(egui::Layout::bottom_up(egui::Align::Max), |ui| {
-                let breath_value = self.start.elapsed().as_secs_f32().sin() / 75.0;
-                let breath_scale_x = 1.0 - breath_value;
-                let breath_scale_y = 1.0 + breath_value;
-
-                let img = {
-                    let volume = *self.audio_state.volume.lock().unwrap();
-                    if volume > FULL_SPEAK_THRESHOLD_DBFS {
-                        &self.full_speak
-                    } else if volume > HALF_SPEAK_THRESHOLD_DBFS {
-                        &self.half_speak
-                    } else {
-                        &self.quiet
-                    }
-                };
-                img.show_size(ui, SIZE * Vec2::new(breath_scale_x, breath_scale_y))
+                self.paint(ctx, ui);
             });
         });
         ctx.request_repaint();
