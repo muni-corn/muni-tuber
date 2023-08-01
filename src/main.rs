@@ -1,4 +1,5 @@
 mod audio;
+mod eyes;
 
 use cpal::Stream;
 use eframe::{
@@ -6,6 +7,7 @@ use eframe::{
     Frame,
 };
 use egui_extras::RetainedImage;
+use eyes::Eyes;
 use std::time::Instant;
 
 fn main() -> Result<(), eframe::Error> {
@@ -26,6 +28,9 @@ struct MuniTuberApp {
     quiet: RetainedImage,
     half_speak: RetainedImage,
     full_speak: RetainedImage,
+
+    /// The eyes state of the character.
+    eyes: Eyes,
 }
 
 impl Default for MuniTuberApp {
@@ -48,6 +53,8 @@ impl Default for MuniTuberApp {
                 include_bytes!("assets/full_speak.png"),
             )
             .unwrap(),
+
+            eyes: Default::default(),
         }
     }
 }
@@ -74,7 +81,9 @@ impl MuniTuberApp {
             }
         };
 
-        head_base.show_size(ui, SIZE * Vec2::new(breath_scale_x, breath_scale_y));
+        let head_base_response =
+            head_base.show_size(ui, SIZE * Vec2::new(breath_scale_x, breath_scale_y));
+        self.eyes.paint(ctx, ui, head_base_response.rect);
     }
 }
 
