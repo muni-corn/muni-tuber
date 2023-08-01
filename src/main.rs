@@ -21,16 +21,26 @@ fn main() -> Result<(), eframe::Error> {
 }
 
 struct MuniTuberApp {
+    /// The time at which the app started.
     start: Instant,
-    audio_state: audio::AudioState,
-    _audio_stream: Stream,
 
+    /// The state of the audio input volume.
+    audio_state: audio::AudioState,
+
+    /// The head base image to use when the character is quiet.
     quiet: RetainedImage,
+
+    /// The head base image to use when the character is half speaking.
     half_speak: RetainedImage,
+
+    /// The head base image to use when the character is fully speaking.
     full_speak: RetainedImage,
 
     /// The eyes state of the character.
     eyes: Eyes,
+
+    /// The audio input stream, stored here so that it isn't dropped.
+    _audio_stream: Stream,
 }
 
 impl Default for MuniTuberApp {
@@ -59,8 +69,13 @@ impl Default for MuniTuberApp {
     }
 }
 
+/// The size of the character, in pixels.
 const SIZE: Vec2 = Vec2::new(300.0, 300.0);
+
+/// The threshold at which the character is considered to be half speaking, in dBFS.
 const HALF_SPEAK_THRESHOLD_DBFS: f32 = -30.0;
+
+/// The threshold at which the character is considered to be fully speaking, in dBFS.
 const FULL_SPEAK_THRESHOLD_DBFS: f32 = -20.0;
 
 impl MuniTuberApp {
