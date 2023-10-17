@@ -3,7 +3,7 @@ mod eyes;
 
 use cpal::Stream;
 use eframe::{
-    egui::{self, CentralPanel, Context, Ui, Vec2},
+    egui::{self, CentralPanel, Context, Ui, Vec2, Image},
     Frame,
 };
 use egui_extras::RetainedImage;
@@ -26,6 +26,9 @@ struct MuniTuberApp {
 
     /// The state of the audio input volume.
     audio_state: audio::AudioState,
+
+    /// The image of the body to use.
+    body: RetainedImage,
 
     /// The head base image to use when the character is quiet.
     quiet: RetainedImage,
@@ -51,16 +54,22 @@ impl Default for MuniTuberApp {
             audio_state,
             _audio_stream,
 
-            quiet: RetainedImage::from_image_bytes("quiet", include_bytes!("assets/quiet.png"))
+            body: RetainedImage::from_image_bytes("body", include_bytes!("assets/body.png"))
                 .unwrap(),
+
+            quiet: RetainedImage::from_image_bytes(
+                "quiet",
+                include_bytes!("assets/head_happy_quiet.png"),
+            )
+            .unwrap(),
             half_speak: RetainedImage::from_image_bytes(
                 "half_speak",
-                include_bytes!("assets/half_speak.png"),
+                include_bytes!("assets/head_happy_halfspeak.png"),
             )
             .unwrap(),
             full_speak: RetainedImage::from_image_bytes(
                 "full_speak",
-                include_bytes!("assets/full_speak.png"),
+                include_bytes!("assets/head_happy_speak.png"),
             )
             .unwrap(),
 
@@ -77,7 +86,7 @@ const FULL_SPEAK_THRESHOLD_DBFS: f32 = -20.0;
 
 impl MuniTuberApp {
     fn paint(&mut self, ctx: &Context, ui: &mut Ui) {
-        let breath_value = self.start.elapsed().as_secs_f32().sin() / 75.0;
+        let breath_value = self.start.elapsed().as_secs_f32().sin() / 85.0;
         let breath_scale_x = 1.0 - breath_value;
         let breath_scale_y = 1.0 + breath_value;
 
@@ -93,16 +102,19 @@ impl MuniTuberApp {
             }
         };
 
-
-        // draw head and eyes
+        // draw body
         let image_to_ui_height_ratio = ui.max_rect().height() / head_base.size_vec2().y;
-        let head_base_response = head_base.show_size(
+        let show_body_response = self.body.show_size(
             ui,
             image_to_ui_height_ratio
                 * head_base.size_vec2()
                 * Vec2::new(breath_scale_x, breath_scale_y),
         );
-        self.eyes.paint(ctx, ui, head_base_response.rect);
+
+        // draw head and eyes
+        Image::new(head_base.texture_id(ctx), show_body_response.rect.size())
+            .paint_at(ui, show_body_response.rect);
+        self.eyes.paint(ctx, ui, show_body_response.rect);
     }
 }
 
