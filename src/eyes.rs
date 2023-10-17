@@ -46,13 +46,13 @@ impl Default for Eyes {
             last_blink: now,
             next_blink,
             blink_phase: BlinkPhase::Open,
-            expression: EyesExpression::Angry,
+            expression: EyesExpression::Normal,
             eyes_open_imgs: HashMap::from([
                 (
                     EyesExpression::Normal,
                     RetainedImage::from_image_bytes(
                         "eyes_open",
-                        include_bytes!("assets/eyes_open.png"),
+                        include_bytes!("assets/eyes_normal_open.png"),
                     )
                     .unwrap(),
                 ),
@@ -78,7 +78,7 @@ impl Default for Eyes {
                     EyesExpression::Normal,
                     RetainedImage::from_image_bytes(
                         "eyes_closed",
-                        include_bytes!("assets/eyes_closed.png"),
+                        include_bytes!("assets/eyes_normal_closed.png"),
                     )
                     .unwrap(),
                 ),
