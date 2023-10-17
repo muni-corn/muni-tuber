@@ -1,6 +1,12 @@
-use std::time::{Instant, Duration};
-use eframe::{egui::{Context, Ui, Image}, epaint::Rect};
+use eframe::{
+    egui::{Context, Image, Ui},
+    epaint::Rect,
+};
 use egui_extras::RetainedImage;
+use std::{
+    collections::HashMap,
+    time::{Duration, Instant},
+};
 
 /// The minimum delay between blinks, in seconds.
 const BLINK_MIN_DELAY: f32 = 1.0;
@@ -21,11 +27,14 @@ pub struct Eyes {
     /// The current phase of the blink animation.
     blink_phase: BlinkPhase,
 
+    /// The current expression of the eyes.
+    expression: EyesExpression,
+
     /// The image to use when the character's eyes are open.
-    eyes_open_img: RetainedImage,
+    eyes_open_imgs: HashMap<EyesExpression, RetainedImage>,
 
     /// The image to use when the character's eyes are closed.
-    eyes_closed_img: RetainedImage,
+    eyes_closed_imgs: HashMap<EyesExpression, RetainedImage>,
 }
 
 impl Default for Eyes {
@@ -37,16 +46,59 @@ impl Default for Eyes {
             last_blink: now,
             next_blink,
             blink_phase: BlinkPhase::Open,
-            eyes_open_img: RetainedImage::from_image_bytes(
-                "eyes_open",
-                include_bytes!("assets/eyes_open.png"),
-            )
-            .unwrap(),
-            eyes_closed_img: RetainedImage::from_image_bytes(
-                "eyes_closed",
-                include_bytes!("assets/eyes_closed.png"),
-            )
-            .unwrap(),
+            expression: EyesExpression::Angry,
+            eyes_open_imgs: HashMap::from([
+                (
+                    EyesExpression::Normal,
+                    RetainedImage::from_image_bytes(
+                        "eyes_open",
+                        include_bytes!("assets/eyes_open.png"),
+                    )
+                    .unwrap(),
+                ),
+                (
+                    EyesExpression::Sad,
+                    RetainedImage::from_image_bytes(
+                        "eyes_sad_open",
+                        include_bytes!("assets/eyes_sad_open.png"),
+                    )
+                    .unwrap(),
+                ),
+                (
+                    EyesExpression::Angry,
+                    RetainedImage::from_image_bytes(
+                        "eyes_angry_open",
+                        include_bytes!("assets/eyes_angry_open.png"),
+                    )
+                    .unwrap(),
+                ),
+            ]),
+            eyes_closed_imgs: HashMap::from([
+                (
+                    EyesExpression::Normal,
+                    RetainedImage::from_image_bytes(
+                        "eyes_closed",
+                        include_bytes!("assets/eyes_closed.png"),
+                    )
+                    .unwrap(),
+                ),
+                (
+                    EyesExpression::Sad,
+                    RetainedImage::from_image_bytes(
+                        "eyes_sad_closed",
+                        include_bytes!("assets/eyes_sad_closed.png"),
+                    )
+                    .unwrap(),
+                ),
+                (
+                    EyesExpression::Angry,
+                    RetainedImage::from_image_bytes(
+                        "eyes_angry_closed",
+                        include_bytes!("assets/eyes_angry_closed.png"),
+                    )
+                    .unwrap(),
+                ),
+            ]),
         }
     }
 }
@@ -84,22 +136,25 @@ impl Eyes {
         self.update();
 
         // decide which image to use
-        let img = match self.blink_phase {
-            BlinkPhase::Open => &self.eyes_open_img,
-            BlinkPhase::Closed => &self.eyes_closed_img,
+        let map = match self.blink_phase {
+            BlinkPhase::Open => &self.eyes_open_imgs,
+            BlinkPhase::Closed => &self.eyes_closed_imgs,
         };
+        let img = map.get(&self.expression).unwrap();
 
         // paint the image over the given rectangle
-        Image::new(
-            img.texture_id(ctx),
-            rect.size(),
-        )
-        .paint_at(ui, rect)
-
+        Image::new(img.texture_id(ctx), rect.size()).paint_at(ui, rect)
     }
 }
 
 enum BlinkPhase {
     Open,
     Closed,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+enum EyesExpression {
+    Normal,
+    Sad,
+    Angry,
 }
