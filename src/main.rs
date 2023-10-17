@@ -84,7 +84,7 @@ impl MuniTuberApp {
 impl eframe::App for MuniTuberApp {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         CentralPanel::default().show(ctx, |ui| {
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::Max), |ui| {
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
                 self.paint(ctx, ui);
             });
         });
