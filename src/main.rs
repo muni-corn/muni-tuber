@@ -69,9 +69,6 @@ impl Default for MuniTuberApp {
     }
 }
 
-/// The size of the character, in pixels.
-const SIZE: Vec2 = Vec2::new(300.0, 300.0);
-
 /// The threshold at which the character is considered to be half speaking, in dBFS.
 const HALF_SPEAK_THRESHOLD_DBFS: f32 = -30.0;
 
@@ -96,8 +93,15 @@ impl MuniTuberApp {
             }
         };
 
-        let head_base_response =
-            head_base.show_size(ui, SIZE * Vec2::new(breath_scale_x, breath_scale_y));
+
+        // draw head and eyes
+        let image_to_ui_height_ratio = ui.max_rect().height() / head_base.size_vec2().y;
+        let head_base_response = head_base.show_size(
+            ui,
+            image_to_ui_height_ratio
+                * head_base.size_vec2()
+                * Vec2::new(breath_scale_x, breath_scale_y),
+        );
         self.eyes.paint(ctx, ui, head_base_response.rect);
     }
 }
