@@ -1,13 +1,15 @@
 mod audio;
 mod eyes;
+mod head;
 
 use cpal::Stream;
 use eframe::{
-    egui::{self, CentralPanel, Context, Image, Ui, Vec2},
+    egui::{self, CentralPanel, Context, Ui, Vec2},
     Frame,
 };
 use egui_extras::RetainedImage;
 use eyes::Eyes;
+use head::Head;
 use std::time::Instant;
 
 fn main() -> Result<(), eframe::Error> {
@@ -30,14 +32,8 @@ struct MuniTuberApp {
     /// The image of the body to use.
     body: RetainedImage,
 
-    /// The head base image to use when the character is quiet.
-    quiet: RetainedImage,
-
-    /// The head base image to use when the character is half speaking.
-    half_speak: RetainedImage,
-
-    /// The head base image to use when the character is fully speaking.
-    full_speak: RetainedImage,
+    /// The head of the character
+    head: Head,
 
     /// The eyes state of the character.
     eyes: Eyes,
@@ -57,32 +53,11 @@ impl Default for MuniTuberApp {
             body: RetainedImage::from_image_bytes("body", include_bytes!("assets/body.png"))
                 .unwrap(),
 
-            quiet: RetainedImage::from_image_bytes(
-                "quiet",
-                include_bytes!("assets/head_happy_quiet.png"),
-            )
-            .unwrap(),
-            half_speak: RetainedImage::from_image_bytes(
-                "half_speak",
-                include_bytes!("assets/head_happy_halfspeak.png"),
-            )
-            .unwrap(),
-            full_speak: RetainedImage::from_image_bytes(
-                "full_speak",
-                include_bytes!("assets/head_happy_speak.png"),
-            )
-            .unwrap(),
-
+            head: Default::default(),
             eyes: Default::default(),
         }
     }
 }
-
-/// The threshold at which the character is considered to be half speaking, in dBFS.
-const HALF_SPEAK_THRESHOLD_DBFS: f32 = -30.0;
-
-/// The threshold at which the character is considered to be fully speaking, in dBFS.
-const FULL_SPEAK_THRESHOLD_DBFS: f32 = -20.0;
 
 impl MuniTuberApp {
     fn paint(&mut self, ctx: &Context, ui: &mut Ui) {
@@ -90,30 +65,18 @@ impl MuniTuberApp {
         let breath_scale_x = 1.0 - breath_value;
         let breath_scale_y = 1.0 + breath_value;
 
-        // determine head_base to use
-        let head_base = {
-            let volume = *self.audio_state.volume.lock().unwrap();
-            if volume > FULL_SPEAK_THRESHOLD_DBFS {
-                &self.full_speak
-            } else if volume > HALF_SPEAK_THRESHOLD_DBFS {
-                &self.half_speak
-            } else {
-                &self.quiet
-            }
-        };
-
         // draw body
-        let image_to_ui_height_ratio = ui.max_rect().height() / head_base.size_vec2().y;
+        let image_to_ui_height_ratio = ui.max_rect().height() / self.body.size_vec2().y;
         let show_body_response = self.body.show_size(
             ui,
             image_to_ui_height_ratio
-                * head_base.size_vec2()
+                * self.body.size_vec2()
                 * Vec2::new(breath_scale_x, breath_scale_y),
         );
 
         // draw head and eyes
-        Image::new(head_base.texture_id(ctx), show_body_response.rect.size())
-            .paint_at(ui, show_body_response.rect);
+        let volume = *self.audio_state.volume.lock().unwrap();
+        self.head.paint(ctx, ui, show_body_response.rect, volume);
         self.eyes.paint(ctx, ui, show_body_response.rect);
     }
 }
