@@ -3,7 +3,7 @@ mod eyes;
 
 use cpal::Stream;
 use eframe::{
-    egui::{self, CentralPanel, Context, Ui, Vec2, Image},
+    egui::{self, CentralPanel, Context, Image, Ui, Vec2},
     Frame,
 };
 use egui_extras::RetainedImage;
@@ -86,7 +86,7 @@ const FULL_SPEAK_THRESHOLD_DBFS: f32 = -20.0;
 
 impl MuniTuberApp {
     fn paint(&mut self, ctx: &Context, ui: &mut Ui) {
-        let breath_value = self.start.elapsed().as_secs_f32().sin() / 85.0;
+        let breath_value = (self.start.elapsed().as_secs_f32() * 1.5).sin() / 200.0;
         let breath_scale_x = 1.0 - breath_value;
         let breath_scale_y = 1.0 + breath_value;
 
