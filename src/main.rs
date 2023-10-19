@@ -38,6 +38,9 @@ struct MuniTuberApp {
     /// The eyes state of the character.
     eyes: Eyes,
 
+    /// The expression of the character.
+    expression: ExpressionState,
+
     /// The audio input stream, stored here so that it isn't dropped.
     _audio_stream: Stream,
 }
@@ -55,6 +58,7 @@ impl Default for MuniTuberApp {
 
             head: Default::default(),
             eyes: Default::default(),
+            expression: Default::default(),
         }
     }
 }
@@ -76,8 +80,8 @@ impl MuniTuberApp {
 
         // draw head and eyes
         let volume = *self.audio_state.volume.lock().unwrap();
-        self.head.paint(ctx, ui, show_body_response.rect, volume);
-        self.eyes.paint(ctx, ui, show_body_response.rect);
+        self.head.paint(ctx, ui, show_body_response.rect, volume, self.expression.head);
+        self.eyes.paint(ctx, ui, show_body_response.rect, self.expression.eyes);
     }
 }
 
@@ -89,5 +93,20 @@ impl eframe::App for MuniTuberApp {
             });
         });
         ctx.request_repaint();
+    }
+}
+
+struct ExpressionState {
+    /// The current expression of the character.
+    eyes: eyes::EyesExpression,
+    head: head::HeadExpression,
+}
+
+impl Default for ExpressionState {
+    fn default() -> Self {
+        Self {
+            eyes: eyes::EyesExpression::Normal,
+            head: head::HeadExpression::Happy,
+        }
     }
 }

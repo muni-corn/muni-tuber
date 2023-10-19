@@ -25,9 +25,6 @@ pub struct Head {
     /// The default head base to use.
     default_head_base: RetainedImage,
 
-    /// The current expression on the character.
-    expression: HeadExpression,
-
     /// The current speaking phase.
     speak_phase: SpeakPhase,
 
@@ -36,7 +33,7 @@ pub struct Head {
 }
 
 impl Head {
-    pub fn paint(&mut self, ctx: &Context, ui: &mut Ui, rect: Rect, volume: f32) {
+    pub fn paint(&mut self, ctx: &Context, ui: &mut Ui, rect: Rect, volume: f32, expression: HeadExpression) {
         // determine head_base to use
         if self.last_phase_change.elapsed() > MINIMUM_FRAME_TIME {
             let last_phase = self.speak_phase;
@@ -55,7 +52,7 @@ impl Head {
 
         let head_base = self
             .head_bases
-            .get(&(self.expression, self.speak_phase))
+            .get(&(expression, self.speak_phase))
             .unwrap_or(&self.default_head_base);
         Image::new(head_base.texture_id(ctx), rect.size()).paint_at(ui, rect);
     }
@@ -128,7 +125,6 @@ impl Default for Head {
             )
             .unwrap(),
 
-            expression: HeadExpression::Happy,
             speak_phase: SpeakPhase::Quiet,
             last_phase_change: Instant::now(),
         }
@@ -143,7 +139,7 @@ enum SpeakPhase {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-enum HeadExpression {
+pub enum HeadExpression {
     Happy,
     Frown,
 }

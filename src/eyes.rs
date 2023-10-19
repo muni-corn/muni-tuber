@@ -27,9 +27,6 @@ pub struct Eyes {
     /// The current phase of the blink animation.
     blink_phase: BlinkPhase,
 
-    /// The current expression of the eyes.
-    expression: EyesExpression,
-
     /// The image to use when the character's eyes are open.
     eyes_open_imgs: HashMap<EyesExpression, RetainedImage>,
 
@@ -46,7 +43,6 @@ impl Default for Eyes {
             last_blink: now,
             next_blink,
             blink_phase: BlinkPhase::Open,
-            expression: EyesExpression::Normal,
             eyes_open_imgs: HashMap::from([
                 (
                     EyesExpression::Normal,
@@ -132,7 +128,7 @@ impl Eyes {
 
     /// Paints the eyes over the given rectangle. The rectangle should be the rectangle over which
     /// the head base was painted.
-    pub fn paint(&mut self, ctx: &Context, ui: &mut Ui, rect: Rect) {
+    pub fn paint(&mut self, ctx: &Context, ui: &mut Ui, rect: Rect, expression: EyesExpression) {
         self.update();
 
         // decide which image to use
@@ -140,7 +136,7 @@ impl Eyes {
             BlinkPhase::Open => &self.eyes_open_imgs,
             BlinkPhase::Closed => &self.eyes_closed_imgs,
         };
-        let img = map.get(&self.expression).unwrap();
+        let img = map.get(&expression).unwrap();
 
         // paint the image over the given rectangle
         Image::new(img.texture_id(ctx), rect.size()).paint_at(ui, rect)
@@ -153,7 +149,7 @@ enum BlinkPhase {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-enum EyesExpression {
+pub enum EyesExpression {
     Normal,
     Sad,
     Angry,
