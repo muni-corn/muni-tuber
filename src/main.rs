@@ -1,16 +1,17 @@
 mod audio;
 mod eyes;
 mod head;
+mod keys;
 
 use cpal::Stream;
 use eframe::{
-    egui::{self, CentralPanel, Context, Ui, Vec2},
+    egui::{self, CentralPanel, Context, Key, Ui, Vec2},
     Frame,
 };
 use egui_extras::RetainedImage;
 use eyes::Eyes;
 use head::Head;
-use std::time::Instant;
+use std::{collections::HashMap, time::Instant};
 
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions::default();
@@ -41,6 +42,9 @@ struct MuniTuberApp {
     /// The expression of the character.
     expression: ExpressionState,
 
+    /// The hotkey manager for the character's expressions.
+    hotkey_manager: keys::ExpressionHotkeyManager,
+
     /// The audio input stream, stored here so that it isn't dropped.
     _audio_stream: Stream,
 }
@@ -48,6 +52,49 @@ struct MuniTuberApp {
 impl Default for MuniTuberApp {
     fn default() -> Self {
         let (audio_state, _audio_stream) = audio::start_default_stream();
+
+        let hotkey_manager = keys::ExpressionHotkeyManager {
+            force_blink_key: Key::Num0,
+            expression_switches: HashMap::from([
+                (
+                    Key::Num1,
+                    ExpressionState {
+                        eyes: eyes::EyesExpression::Normal,
+                        head: head::HeadExpression::Happy,
+                    },
+                ),
+                (
+                    Key::Num2,
+                    ExpressionState {
+                        eyes: eyes::EyesExpression::Angry,
+                        head: head::HeadExpression::Frown,
+                    },
+                ),
+                (
+                    Key::Num3,
+                    ExpressionState {
+                        eyes: eyes::EyesExpression::Sad,
+                        head: head::HeadExpression::Frown,
+                    },
+                ),
+                (
+                    Key::Num4,
+                    ExpressionState {
+                        eyes: eyes::EyesExpression::Angry,
+                        head: head::HeadExpression::Happy,
+                    },
+                ),
+                (
+                    Key::Num5,
+                    ExpressionState {
+                        eyes: eyes::EyesExpression::Sad,
+                        head: head::HeadExpression::Happy,
+                    },
+                ),
+            ]),
+            expression_holds: HashMap::new(),
+        };
+
         Self {
             start: Instant::now(),
             audio_state,
@@ -59,6 +106,7 @@ impl Default for MuniTuberApp {
             head: Default::default(),
             eyes: Default::default(),
             expression: Default::default(),
+            hotkey_manager,
         }
     }
 }
@@ -78,10 +126,32 @@ impl MuniTuberApp {
                 * Vec2::new(breath_scale_x, breath_scale_y),
         );
 
+        // get some variables
+        let should_force_blink = self.hotkey_manager.should_force_blink(ctx);
+        if let Some(new_expression) = self.hotkey_manager.get_expression(ctx) {
+            self.expression = *new_expression;
+        }
+        let expression_to_use = self
+            .hotkey_manager
+            .get_temporary_expression(ctx)
+            .unwrap_or(&self.expression);
+
         // draw head and eyes
         let volume = *self.audio_state.volume.lock().unwrap();
-        self.head.paint(ctx, ui, show_body_response.rect, volume, self.expression.head);
-        self.eyes.paint(ctx, ui, show_body_response.rect, self.expression.eyes);
+        self.head.paint(
+            ctx,
+            ui,
+            show_body_response.rect,
+            volume,
+            expression_to_use.head,
+        );
+        self.eyes.paint(
+            ctx,
+            ui,
+            show_body_response.rect,
+            expression_to_use.eyes,
+            should_force_blink,
+        );
     }
 }
 
@@ -96,7 +166,8 @@ impl eframe::App for MuniTuberApp {
     }
 }
 
-struct ExpressionState {
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct ExpressionState {
     /// The current expression of the character.
     eyes: eyes::EyesExpression,
     head: head::HeadExpression,

@@ -138,7 +138,7 @@ enum SpeakPhase {
     FullSpeak,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum HeadExpression {
     Happy,
     Frown,
