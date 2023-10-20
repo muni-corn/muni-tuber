@@ -10,7 +10,7 @@ use eframe::{
 use egui_extras::RetainedImage;
 
 /// The minimum time a speaking frame must be visible.
-const MINIMUM_FRAME_TIME: Duration = Duration::from_millis(100);
+const MINIMUM_FRAME_TIME: Duration = Duration::from_millis(1000 / 24);
 
 pub struct Head {
     /// The threshold at which the character is considered to be fully speaking, in dBFS.
