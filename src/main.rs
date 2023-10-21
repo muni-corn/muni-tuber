@@ -6,6 +6,7 @@ mod keys;
 use cpal::Stream;
 use eframe::{
     egui::{self, CentralPanel, Context, Key, Ui, Vec2},
+    epaint::Color32,
     Frame,
 };
 use egui_extras::RetainedImage;
@@ -157,11 +158,16 @@ impl MuniTuberApp {
 
 impl eframe::App for MuniTuberApp {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-        CentralPanel::default().show(ctx, |ui| {
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
-                self.paint(ctx, ui);
+        CentralPanel::default()
+            .frame(egui::Frame {
+                fill: Color32::YELLOW,
+                ..Default::default()
+            })
+            .show(ctx, |ui| {
+                ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+                    self.paint(ctx, ui);
+                });
             });
-        });
         ctx.request_repaint();
     }
 }
