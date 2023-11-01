@@ -55,41 +55,55 @@ impl Default for MuniTuberApp {
         let (audio_state, _audio_stream) = audio::start_default_stream();
 
         let hotkey_manager = keys::ExpressionHotkeyManager {
-            force_blink_key: Key::Num0,
+            force_blink_key: Key::F12,
             expression_switches: HashMap::from([
                 (
-                    Key::Num1,
+                    Key::F1,
                     ExpressionState {
                         eyes: eyes::EyesExpression::Normal,
                         head: head::HeadExpression::Happy,
                     },
                 ),
                 (
-                    Key::Num2,
+                    Key::F2,
                     ExpressionState {
                         eyes: eyes::EyesExpression::Angry,
                         head: head::HeadExpression::Frown,
                     },
                 ),
                 (
-                    Key::Num3,
+                    Key::F3,
                     ExpressionState {
                         eyes: eyes::EyesExpression::Sad,
                         head: head::HeadExpression::Frown,
                     },
                 ),
                 (
-                    Key::Num4,
+                    Key::F4,
                     ExpressionState {
                         eyes: eyes::EyesExpression::Angry,
                         head: head::HeadExpression::Happy,
                     },
                 ),
                 (
-                    Key::Num5,
+                    Key::F5,
                     ExpressionState {
                         eyes: eyes::EyesExpression::Sad,
                         head: head::HeadExpression::Happy,
+                    },
+                ),
+                (
+                    Key::F7,
+                    ExpressionState {
+                        eyes: eyes::EyesExpression::Sad,
+                        head: head::HeadExpression::Wavy,
+                    },
+                ),
+                (
+                    Key::F8,
+                    ExpressionState {
+                        eyes: eyes::EyesExpression::Wide,
+                        head: head::HeadExpression::Wavy,
                     },
                 ),
             ]),

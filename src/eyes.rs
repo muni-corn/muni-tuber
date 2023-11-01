@@ -88,6 +88,14 @@ impl Default for Eyes {
                     )
                     .unwrap(),
                 ),
+                (
+                    EyesExpression::Wide,
+                    RetainedImage::from_image_bytes(
+                        "eyes_wide",
+                        include_bytes!("assets/eyes_wide.png"),
+                    )
+                    .unwrap(),
+                ),
             ]),
             eyes_closed_imgs: HashMap::from([
                 (
@@ -111,6 +119,14 @@ impl Default for Eyes {
                     RetainedImage::from_image_bytes(
                         "eyes_angry_closed",
                         include_bytes!("assets/eyes_angry_closed.png"),
+                    )
+                    .unwrap(),
+                ),
+                (
+                    EyesExpression::Wide,
+                    RetainedImage::from_image_bytes(
+                        "eyes_tight",
+                        include_bytes!("assets/eyes_tight.png"),
                     )
                     .unwrap(),
                 ),
@@ -191,4 +207,5 @@ pub enum EyesExpression {
     Normal,
     Sad,
     Angry,
+    Wide,
 }

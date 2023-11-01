@@ -13,11 +13,14 @@ use egui_extras::RetainedImage;
 const MINIMUM_FRAME_TIME: Duration = Duration::from_millis(1000 / 24);
 
 pub struct Head {
+    /// The threshold at which the character is considered to be half speaking, in dBFS.
+    half_speak_threshold_dbfs: f32,
+
     /// The threshold at which the character is considered to be fully speaking, in dBFS.
     full_speak_threshold_dbfs: f32,
 
-    /// The threshold at which the character is considered to be half speaking, in dBFS.
-    half_speak_threshold_dbfs: f32,
+    /// The threshold at which the character is considered to be yelling, in dBFS.
+    yelling_threshold_dbfs: f32,
 
     /// Base images to use for the character's head.
     head_bases: HashMap<(HeadExpression, SpeakPhase), RetainedImage>,
@@ -37,7 +40,9 @@ impl Head {
         // determine head_base to use
         if self.last_phase_change.elapsed() > MINIMUM_FRAME_TIME {
             let last_phase = self.speak_phase;
-            self.speak_phase = if volume > self.full_speak_threshold_dbfs {
+            self.speak_phase = if volume > self.yelling_threshold_dbfs {
+                SpeakPhase::Yell
+            } else if volume > self.full_speak_threshold_dbfs {
                 SpeakPhase::FullSpeak
             } else if volume > self.half_speak_threshold_dbfs {
                 SpeakPhase::HalfSpeak
@@ -61,8 +66,9 @@ impl Head {
 impl Default for Head {
     fn default() -> Self {
         Self {
-            full_speak_threshold_dbfs: -20.0,
             half_speak_threshold_dbfs: -30.0,
+            full_speak_threshold_dbfs: -20.0,
+            yelling_threshold_dbfs: -2.0,
 
             head_bases: HashMap::from([
                 // happy faces
@@ -116,6 +122,48 @@ impl Default for Head {
                     )
                     .unwrap(),
                 ),
+                (
+                    (HeadExpression::Frown, SpeakPhase::Yell),
+                    RetainedImage::from_image_bytes(
+                        "head_frown_yell",
+                        include_bytes!("assets/head_frown_yell.png"),
+                    )
+                    .unwrap(),
+                ),
+
+                // wavy faces
+                (
+                    (HeadExpression::Wavy, SpeakPhase::Quiet),
+                    RetainedImage::from_image_bytes(
+                        "head_wavy_quiet",
+                        include_bytes!("assets/head_wavy_quiet.png"),
+                    )
+                    .unwrap(),
+                ),
+                (
+                    (HeadExpression::Wavy, SpeakPhase::HalfSpeak),
+                    RetainedImage::from_image_bytes(
+                        "head_wavy_halfspeak",
+                        include_bytes!("assets/head_wavy_halfspeak.png"),
+                    )
+                    .unwrap(),
+                ),
+                (
+                    (HeadExpression::Wavy, SpeakPhase::FullSpeak),
+                    RetainedImage::from_image_bytes(
+                        "head_wavy_speak",
+                        include_bytes!("assets/head_wavy_speak.png"),
+                    )
+                    .unwrap(),
+                ),
+                (
+                    (HeadExpression::Wavy, SpeakPhase::Yell),
+                    RetainedImage::from_image_bytes(
+                        "head_wavy_yell",
+                        include_bytes!("assets/head_wavy_yell.png"),
+                    )
+                    .unwrap(),
+                ),
             ]),
 
             // RetainedImage does not implement Clone >:c
@@ -136,10 +184,12 @@ enum SpeakPhase {
     Quiet,
     HalfSpeak,
     FullSpeak,
+    Yell,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum HeadExpression {
     Happy,
     Frown,
+    Wavy,
 }
