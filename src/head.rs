@@ -83,7 +83,7 @@ impl Default for Head {
                 (
                     (HeadExpression::Happy, SpeakPhase::HalfSpeak),
                     RetainedImage::from_image_bytes(
-                        "head_happy_quiet",
+                        "head_happy_halfspeak",
                         include_bytes!("assets/head_happy_halfspeak.png"),
                     )
                     .unwrap(),
@@ -91,12 +91,11 @@ impl Default for Head {
                 (
                     (HeadExpression::Happy, SpeakPhase::FullSpeak),
                     RetainedImage::from_image_bytes(
-                        "head_happy_quiet",
+                        "head_happy_speak",
                         include_bytes!("assets/head_happy_speak.png"),
                     )
                     .unwrap(),
                 ),
-
                 // frowny faces
                 (
                     (HeadExpression::Frown, SpeakPhase::Quiet),
@@ -109,7 +108,7 @@ impl Default for Head {
                 (
                     (HeadExpression::Frown, SpeakPhase::HalfSpeak),
                     RetainedImage::from_image_bytes(
-                        "head_frown_quiet",
+                        "head_frown_halfspeak",
                         include_bytes!("assets/head_frown_halfspeak.png"),
                     )
                     .unwrap(),
@@ -117,7 +116,7 @@ impl Default for Head {
                 (
                     (HeadExpression::Frown, SpeakPhase::FullSpeak),
                     RetainedImage::from_image_bytes(
-                        "head_frown_quiet",
+                        "head_frown_speak",
                         include_bytes!("assets/head_frown_speak.png"),
                     )
                     .unwrap(),
