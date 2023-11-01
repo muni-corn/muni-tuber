@@ -36,7 +36,14 @@ pub struct Head {
 }
 
 impl Head {
-    pub fn paint(&mut self, ctx: &Context, ui: &mut Ui, rect: Rect, volume: f32, expression: HeadExpression) {
+    pub fn paint(
+        &mut self,
+        ctx: &Context,
+        ui: &mut Ui,
+        rect: Rect,
+        volume: f32,
+        expression: HeadExpression,
+    ) {
         // determine head_base to use
         if self.last_phase_change.elapsed() > MINIMUM_FRAME_TIME {
             let last_phase = self.speak_phase;
