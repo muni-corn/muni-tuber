@@ -31,8 +31,14 @@ pub struct Head {
     /// The current speaking phase.
     speak_phase: SpeakPhase,
 
+    /// The previous speaking phase.
+    last_speak_phase: SpeakPhase,
+
     /// The time at which the current speaking phase started.
     last_phase_change: Instant,
+
+    /// The time at which speaking last started (phase went from silent to not silent)
+    last_speak_start: Instant,
 }
 
 impl Head {
@@ -46,7 +52,7 @@ impl Head {
     ) {
         // determine head_base to use
         if self.last_phase_change.elapsed() > MINIMUM_FRAME_TIME {
-            let last_phase = self.speak_phase;
+            self.last_speak_phase = self.speak_phase;
             self.speak_phase = if volume > self.yelling_threshold_dbfs {
                 SpeakPhase::Yell
             } else if volume > self.full_speak_threshold_dbfs {
@@ -57,9 +63,13 @@ impl Head {
                 SpeakPhase::Quiet
             };
 
-            if last_phase != self.speak_phase {
+            if self.last_speak_phase != self.speak_phase {
                 self.last_phase_change = Instant::now();
             }
+        }
+
+        if self.last_speak_phase == SpeakPhase::Quiet && self.speak_phase != SpeakPhase::Quiet {
+            self.last_speak_start = Instant::now();
         }
 
         let head_base = self
@@ -67,6 +77,10 @@ impl Head {
             .get(&(expression, self.speak_phase))
             .unwrap_or(&self.default_head_base);
         Image::new(head_base.texture_id(ctx), rect.size()).paint_at(ui, rect);
+    }
+
+    pub fn get_last_speak_start(&self) -> &Instant {
+        &self.last_speak_start
     }
 }
 
@@ -180,7 +194,9 @@ impl Default for Head {
             .unwrap(),
 
             speak_phase: SpeakPhase::Quiet,
+            last_speak_phase: SpeakPhase::Quiet,
             last_phase_change: Instant::now(),
+            last_speak_start: Instant::now(),
         }
     }
 }

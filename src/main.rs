@@ -126,11 +126,26 @@ impl Default for MuniTuberApp {
     }
 }
 
+/// The duration of the "pop" when the character begins speaking.
+const POP_DURATION: f32 = 0.25;
+
+/// The influence of the pop animation on the character.
+const POP_AMOUNT: f32 = 2.0;
+
 impl MuniTuberApp {
     fn paint(&mut self, ctx: &Context, ui: &mut Ui) {
-        let breath_value = (self.start.elapsed().as_secs_f32() * 1.5).sin() / 200.0;
-        let breath_scale_x = 1.0 - breath_value;
-        let breath_scale_y = 1.0 + breath_value;
+        let pop_value = {
+            // quadratic function
+            let x = self.head.get_last_speak_start().elapsed().as_secs_f32();
+            let a = 1.0 / POP_DURATION + 0.5;
+
+            -1.0 * (a * x - POP_DURATION / 2.0).powi(2) + 1.0
+        }
+        .max(0.0);
+
+        let breath_value = (self.start.elapsed().as_secs_f32() * 1.5).sin() + pop_value * POP_AMOUNT;
+        let breath_scale_x = 1.0 - breath_value / 200.0;
+        let breath_scale_y = 1.0 + breath_value / 200.0;
 
         // draw body
         let image_to_ui_height_ratio = ui.max_rect().height() / self.body.size_vec2().y;
