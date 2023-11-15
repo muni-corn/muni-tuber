@@ -151,9 +151,10 @@ impl MuniTuberApp {
         let pop_value = {
             // quadratic function
             let x = self.head.get_last_speak_start().elapsed().as_secs_f32();
-            let a = 1.0 / POP_DURATION + 0.5;
+            let a = -4.0 / POP_DURATION.powi(2);
+            let b = -1.0 * a * POP_DURATION;
 
-            -1.0 * (a * x - POP_DURATION / 2.0).powi(2) + 1.0
+            a * x.powi(2) + b * x
         }
         .max(0.0);
 
