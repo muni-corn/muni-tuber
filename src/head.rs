@@ -94,7 +94,7 @@ impl Default for Head {
         Self {
             half_speak_threshold_dbfs: -30.0,
             full_speak_threshold_dbfs: -20.0,
-            yelling_threshold_dbfs: -2.0,
+            yelling_threshold_dbfs: 5.0,
 
             head_bases: HashMap::from([
                 // happy faces
