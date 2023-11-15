@@ -9,6 +9,8 @@ use eframe::{
 };
 use egui_extras::RetainedImage;
 
+use crate::POP_DURATION;
+
 /// The minimum time a speaking frame must be visible.
 const MINIMUM_FRAME_TIME: Duration = Duration::from_millis(1000 / 24);
 
@@ -68,7 +70,10 @@ impl Head {
             }
         }
 
-        if self.last_speak_phase == SpeakPhase::Quiet && self.speak_phase != SpeakPhase::Quiet {
+        if self.last_speak_phase == SpeakPhase::Quiet
+            && self.speak_phase != SpeakPhase::Quiet
+            && self.last_speak_start.elapsed().as_secs_f32() > POP_DURATION
+        {
             self.last_speak_start = Instant::now();
         }
 
