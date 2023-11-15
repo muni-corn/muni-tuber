@@ -93,14 +93,28 @@ impl Default for MuniTuberApp {
                     },
                 ),
                 (
+                    Key::F6,
+                    ExpressionState {
+                        eyes: eyes::EyesExpression::Dreamy,
+                        head: head::HeadExpression::Happy,
+                    },
+                ),
+                (
                     Key::F7,
+                    ExpressionState {
+                        eyes: eyes::EyesExpression::Dreamy,
+                        head: head::HeadExpression::Frown,
+                    },
+                ),
+                (
+                    Key::F8,
                     ExpressionState {
                         eyes: eyes::EyesExpression::Sad,
                         head: head::HeadExpression::Wavy,
                     },
                 ),
                 (
-                    Key::F8,
+                    Key::F9,
                     ExpressionState {
                         eyes: eyes::EyesExpression::Wide,
                         head: head::HeadExpression::Wavy,
