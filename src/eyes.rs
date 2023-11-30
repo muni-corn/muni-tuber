@@ -103,7 +103,23 @@ impl Default for Eyes {
                         include_bytes!("assets/eyes_dreamy_open.png"),
                     )
                     .unwrap(),
-                )
+                ),
+                (
+                    EyesExpression::Happy,
+                    RetainedImage::from_image_bytes(
+                        "eyes_happy_closed",
+                        include_bytes!("assets/eyes_happy.png"),
+                    )
+                    .unwrap(),
+                ),
+                (
+                    EyesExpression::Tight,
+                    RetainedImage::from_image_bytes(
+                        "eyes_tight",
+                        include_bytes!("assets/eyes_tight.png"),
+                    )
+                    .unwrap(),
+                ),
             ]),
             eyes_closed_imgs: HashMap::from([
                 (
@@ -145,7 +161,23 @@ impl Default for Eyes {
                         include_bytes!("assets/eyes_dreamy_closed.png"),
                     )
                     .unwrap(),
-                )
+                ),
+                (
+                    EyesExpression::Happy,
+                    RetainedImage::from_image_bytes(
+                        "eyes_happy_closed",
+                        include_bytes!("assets/eyes_happy.png"),
+                    )
+                    .unwrap(),
+                ),
+                (
+                    EyesExpression::Tight,
+                    RetainedImage::from_image_bytes(
+                        "eyes_tight",
+                        include_bytes!("assets/eyes_tight.png"),
+                    )
+                    .unwrap(),
+                ),
             ]),
         }
     }
@@ -225,4 +257,6 @@ pub enum EyesExpression {
     Angry,
     Wide,
     Dreamy,
+    Happy,
+    Tight,
 }
