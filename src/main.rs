@@ -68,56 +68,77 @@ impl Default for MuniTuberApp {
                     Key::F2,
                     ExpressionState {
                         eyes: eyes::EyesExpression::Angry,
-                        head: head::HeadExpression::Frown,
+                        head: head::HeadExpression::Happy,
                     },
                 ),
                 (
                     Key::F3,
                     ExpressionState {
                         eyes: eyes::EyesExpression::Sad,
-                        head: head::HeadExpression::Frown,
+                        head: head::HeadExpression::Happy,
                     },
                 ),
                 (
                     Key::F4,
                     ExpressionState {
-                        eyes: eyes::EyesExpression::Angry,
+                        eyes: eyes::EyesExpression::Dreamy,
                         head: head::HeadExpression::Happy,
                     },
                 ),
                 (
                     Key::F5,
                     ExpressionState {
-                        eyes: eyes::EyesExpression::Sad,
-                        head: head::HeadExpression::Happy,
+                        eyes: eyes::EyesExpression::Normal,
+                        head: head::HeadExpression::Frown,
                     },
                 ),
                 (
                     Key::F6,
                     ExpressionState {
-                        eyes: eyes::EyesExpression::Dreamy,
-                        head: head::HeadExpression::Happy,
+                        eyes: eyes::EyesExpression::Angry,
+                        head: head::HeadExpression::Frown,
                     },
                 ),
                 (
                     Key::F7,
                     ExpressionState {
-                        eyes: eyes::EyesExpression::Dreamy,
+                        eyes: eyes::EyesExpression::Sad,
                         head: head::HeadExpression::Frown,
                     },
                 ),
                 (
                     Key::F8,
                     ExpressionState {
-                        eyes: eyes::EyesExpression::Sad,
-                        head: head::HeadExpression::Wavy,
+                        eyes: eyes::EyesExpression::Dreamy,
+                        head: head::HeadExpression::Frown,
                     },
                 ),
                 (
                     Key::F9,
                     ExpressionState {
+                        eyes: eyes::EyesExpression::Sad,
+                        head: head::HeadExpression::Wavy,
+                    },
+                ),
+                (
+                    Key::F10,
+                    ExpressionState {
                         eyes: eyes::EyesExpression::Wide,
                         head: head::HeadExpression::Wavy,
+                    },
+                ),
+                (
+                    Key::F11,
+                    ExpressionState {
+                        eyes: eyes::EyesExpression::Happy,
+                        head: head::HeadExpression::Happy,
+                    },
+                ),
+                (
+                    Key::F12,
+                    ExpressionState {
+                        eyes: eyes::EyesExpression::Tight,
+                        head: head::HeadExpression::Happy,
                     },
                 ),
             ]),
