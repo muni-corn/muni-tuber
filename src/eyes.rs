@@ -22,7 +22,7 @@ pub struct Eyes {
     last_blink: Instant,
 
     /// The expression used in the last frame.
-    last_expression: EyesExpression,
+    last_expression_name: String,
 
     /// The duration until the next blink.
     next_blink_time: Duration,
@@ -30,17 +30,11 @@ pub struct Eyes {
     /// The current phase of the blink animation.
     blink_phase: BlinkPhase,
 
-    /// The default open eyes to use.
-    default_open_img: RetainedImage,
+    /// Images to fallback to when an expression is not found.
+    default_expression: EyesExpression,
 
-    /// The default closed eyes to use.
-    default_closed_img: RetainedImage,
-
-    /// The image to use when the character's eyes are open.
-    eyes_open_imgs: HashMap<EyesExpression, RetainedImage>,
-
-    /// The image to use when the character's eyes are closed.
-    eyes_closed_imgs: HashMap<EyesExpression, RetainedImage>,
+    /// Expression images to use when the character's eyes are open.
+    expressions: HashMap<String, EyesExpression>,
 }
 
 impl Default for Eyes {
@@ -50,133 +44,113 @@ impl Default for Eyes {
 
         Self {
             last_blink: now,
-            last_expression: EyesExpression::Normal,
+            last_expression_name: String::new(),
             next_blink_time,
             blink_phase: BlinkPhase::Open,
-            default_open_img: RetainedImage::from_image_bytes(
-                "eyes_default_open",
-                include_bytes!("assets/eyes_normal_open.png"),
-            )
-            .unwrap(),
-            default_closed_img: RetainedImage::from_image_bytes(
-                "eyes_default_closed",
-                include_bytes!("assets/eyes_normal_closed.png"),
-            )
-            .unwrap(),
-            eyes_open_imgs: HashMap::from([
-                (
-                    EyesExpression::Normal,
+            default_expression: EyesExpression {
+                idle: RetainedImage::from_image_bytes(
+                    "eyes_default_open",
+                    include_bytes!("assets/eyes_normal_open.png"),
+                )
+                .unwrap(),
+                blink: Some(
                     RetainedImage::from_image_bytes(
-                        "eyes_open",
-                        include_bytes!("assets/eyes_normal_open.png"),
-                    )
-                    .unwrap(),
-                ),
-                (
-                    EyesExpression::Sad,
-                    RetainedImage::from_image_bytes(
-                        "eyes_sad_open",
-                        include_bytes!("assets/eyes_sad_open.png"),
-                    )
-                    .unwrap(),
-                ),
-                (
-                    EyesExpression::Angry,
-                    RetainedImage::from_image_bytes(
-                        "eyes_angry_open",
-                        include_bytes!("assets/eyes_angry_open.png"),
-                    )
-                    .unwrap(),
-                ),
-                (
-                    EyesExpression::Wide,
-                    RetainedImage::from_image_bytes(
-                        "eyes_wide",
-                        include_bytes!("assets/eyes_wide.png"),
-                    )
-                    .unwrap(),
-                ),
-                (
-                    EyesExpression::Dreamy,
-                    RetainedImage::from_image_bytes(
-                        "eyes_dreamy_open",
-                        include_bytes!("assets/eyes_dreamy_open.png"),
-                    )
-                    .unwrap(),
-                ),
-                (
-                    EyesExpression::Happy,
-                    RetainedImage::from_image_bytes(
-                        "eyes_happy_closed",
-                        include_bytes!("assets/eyes_happy.png"),
-                    )
-                    .unwrap(),
-                ),
-                (
-                    EyesExpression::Tight,
-                    RetainedImage::from_image_bytes(
-                        "eyes_tight",
-                        include_bytes!("assets/eyes_tight.png"),
-                    )
-                    .unwrap(),
-                ),
-            ]),
-            eyes_closed_imgs: HashMap::from([
-                (
-                    EyesExpression::Normal,
-                    RetainedImage::from_image_bytes(
-                        "eyes_closed",
+                        "eyes_default_closed",
                         include_bytes!("assets/eyes_normal_closed.png"),
                     )
                     .unwrap(),
                 ),
+            },
+            expressions: HashMap::from([
                 (
-                    EyesExpression::Sad,
-                    RetainedImage::from_image_bytes(
-                        "eyes_sad_closed",
-                        include_bytes!("assets/eyes_sad_closed.png"),
-                    )
-                    .unwrap(),
+                    "sad".to_string(),
+                    EyesExpression {
+                        idle: RetainedImage::from_image_bytes(
+                            "eyes_sad_open",
+                            include_bytes!("assets/eyes_sad_open.png"),
+                        )
+                        .unwrap(),
+                        blink: Some(
+                            RetainedImage::from_image_bytes(
+                                "eyes_sad_closed",
+                                include_bytes!("assets/eyes_sad_closed.png"),
+                            )
+                            .unwrap(),
+                        ),
+                    },
                 ),
                 (
-                    EyesExpression::Angry,
-                    RetainedImage::from_image_bytes(
-                        "eyes_angry_closed",
-                        include_bytes!("assets/eyes_angry_closed.png"),
-                    )
-                    .unwrap(),
+                    "angry".to_string(),
+                    EyesExpression {
+                        idle: RetainedImage::from_image_bytes(
+                            "eyes_angry_open",
+                            include_bytes!("assets/eyes_angry_open.png"),
+                        )
+                        .unwrap(),
+                        blink: Some(
+                            RetainedImage::from_image_bytes(
+                                "eyes_angry_closed",
+                                include_bytes!("assets/eyes_angry_closed.png"),
+                            )
+                            .unwrap(),
+                        ),
+                    },
                 ),
                 (
-                    EyesExpression::Wide,
-                    RetainedImage::from_image_bytes(
-                        "eyes_tight",
-                        include_bytes!("assets/eyes_tight.png"),
-                    )
-                    .unwrap(),
+                    "wide".to_string(),
+                    EyesExpression {
+                        idle: RetainedImage::from_image_bytes(
+                            "eyes_wide_open",
+                            include_bytes!("assets/eyes_wide.png"),
+                        )
+                        .unwrap(),
+                        blink: Some(
+                            RetainedImage::from_image_bytes(
+                                "eyes_tight_shut",
+                                include_bytes!("assets/eyes_tight.png"),
+                            )
+                            .unwrap(),
+                        ),
+                    },
                 ),
                 (
-                    EyesExpression::Dreamy,
-                    RetainedImage::from_image_bytes(
-                        "eyes_dreamy_closed",
-                        include_bytes!("assets/eyes_dreamy_closed.png"),
-                    )
-                    .unwrap(),
+                    "dreamy".to_string(),
+                    EyesExpression {
+                        idle: RetainedImage::from_image_bytes(
+                            "eyes_dreamy_open",
+                            include_bytes!("assets/eyes_dreamy_open.png"),
+                        )
+                        .unwrap(),
+                        blink: Some(
+                            RetainedImage::from_image_bytes(
+                                "eyes_dreamy_closed",
+                                include_bytes!("assets/eyes_dreamy_closed.png"),
+                            )
+                            .unwrap(),
+                        ),
+                    },
                 ),
                 (
-                    EyesExpression::Happy,
-                    RetainedImage::from_image_bytes(
-                        "eyes_happy_closed",
-                        include_bytes!("assets/eyes_happy.png"),
-                    )
-                    .unwrap(),
+                    "happy".to_string(),
+                    EyesExpression {
+                        idle: RetainedImage::from_image_bytes(
+                            "eyes_smiling",
+                            include_bytes!("assets/eyes_happy.png"),
+                        )
+                        .unwrap(),
+                        blink: None,
+                    },
                 ),
                 (
-                    EyesExpression::Tight,
-                    RetainedImage::from_image_bytes(
-                        "eyes_tight",
-                        include_bytes!("assets/eyes_tight.png"),
-                    )
-                    .unwrap(),
+                    "tight".to_string(),
+                    EyesExpression {
+                        idle: RetainedImage::from_image_bytes(
+                            "eyes_tight",
+                            include_bytes!("assets/eyes_tight.png"),
+                        )
+                        .unwrap(),
+                        blink: None,
+                    },
                 ),
             ]),
         }
@@ -217,27 +191,28 @@ impl Eyes {
         ctx: &Context,
         ui: &mut Ui,
         rect: Rect,
-        expression: EyesExpression,
+        expression_name: &str,
         force_shut: bool,
     ) {
-        if expression != self.last_expression {
+        // blink now if our expression has changed
+        if expression_name != self.last_expression_name {
             self.last_blink = Instant::now();
-            self.last_expression = expression;
+            self.last_expression_name = expression_name.to_string();
         } else {
             self.update();
         }
 
+        // get the expression to use, or fallback to default
+        let expression = self
+            .expressions
+            .get(expression_name)
+            .unwrap_or(&self.default_expression);
+
         // decide which image to use
         let img = if matches!(self.blink_phase, BlinkPhase::Closed) || force_shut {
-            self.eyes_closed_imgs
-                .get(&expression)
-                .or_else(|| self.eyes_open_imgs.get(&expression))
-                .unwrap_or(&self.default_closed_img)
+            expression.blink.as_ref().unwrap_or(&expression.idle)
         } else {
-            self.eyes_open_imgs
-                .get(&expression)
-                .or_else(|| self.eyes_closed_imgs.get(&expression))
-                .unwrap_or(&self.default_open_img)
+            &expression.idle
         };
 
         // paint the image over the given rectangle
@@ -250,13 +225,7 @@ enum BlinkPhase {
     Closed,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum EyesExpression {
-    Normal,
-    Sad,
-    Angry,
-    Wide,
-    Dreamy,
-    Happy,
-    Tight,
+pub struct EyesExpression {
+    pub idle: RetainedImage,
+    pub blink: Option<RetainedImage>,
 }
