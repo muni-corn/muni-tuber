@@ -59,86 +59,86 @@ impl Default for MuniTuberApp {
             expression_switches: HashMap::from([
                 (
                     Key::F1,
-                    ExpressionState {
-                        eyes: eyes::EyesExpression::Normal,
-                        head: head::HeadExpression::Happy,
+                    ExpressionChange {
+                        eyes: Some("normal".to_string()),
+                        head: Some("happy".to_string()),
                     },
                 ),
                 (
                     Key::F2,
-                    ExpressionState {
-                        eyes: eyes::EyesExpression::Angry,
-                        head: head::HeadExpression::Happy,
+                    ExpressionChange {
+                        eyes: Some("angry".to_string()),
+                        head: Some("happy".to_string()),
                     },
                 ),
                 (
                     Key::F3,
-                    ExpressionState {
-                        eyes: eyes::EyesExpression::Sad,
-                        head: head::HeadExpression::Happy,
+                    ExpressionChange {
+                        eyes: Some("sad".to_string()),
+                        head: Some("happy".to_string()),
                     },
                 ),
                 (
                     Key::F4,
-                    ExpressionState {
-                        eyes: eyes::EyesExpression::Dreamy,
-                        head: head::HeadExpression::Happy,
+                    ExpressionChange {
+                        eyes: Some("dreamy".to_string()),
+                        head: Some("happy".to_string()),
                     },
                 ),
                 (
                     Key::F5,
-                    ExpressionState {
-                        eyes: eyes::EyesExpression::Normal,
-                        head: head::HeadExpression::Frown,
+                    ExpressionChange {
+                        eyes: Some("normal".to_string()),
+                        head: Some("frown".to_string()),
                     },
                 ),
                 (
                     Key::F6,
-                    ExpressionState {
-                        eyes: eyes::EyesExpression::Angry,
-                        head: head::HeadExpression::Frown,
+                    ExpressionChange {
+                        eyes: Some("angry".to_string()),
+                        head: Some("frown".to_string()),
                     },
                 ),
                 (
                     Key::F7,
-                    ExpressionState {
-                        eyes: eyes::EyesExpression::Sad,
-                        head: head::HeadExpression::Frown,
+                    ExpressionChange {
+                        eyes: Some("sad".to_string()),
+                        head: Some("frown".to_string()),
                     },
                 ),
                 (
                     Key::F8,
-                    ExpressionState {
-                        eyes: eyes::EyesExpression::Dreamy,
-                        head: head::HeadExpression::Frown,
+                    ExpressionChange {
+                        eyes: Some("dreamy".to_string()),
+                        head: Some("frown".to_string()),
                     },
                 ),
                 (
                     Key::F9,
-                    ExpressionState {
-                        eyes: eyes::EyesExpression::Sad,
-                        head: head::HeadExpression::Wavy,
+                    ExpressionChange {
+                        eyes: Some("sad".to_string()),
+                        head: Some("wavy".to_string()),
                     },
                 ),
                 (
                     Key::F10,
-                    ExpressionState {
-                        eyes: eyes::EyesExpression::Wide,
-                        head: head::HeadExpression::Wavy,
+                    ExpressionChange {
+                        eyes: Some("wide".to_string()),
+                        head: Some("wavy".to_string()),
                     },
                 ),
                 (
                     Key::F11,
-                    ExpressionState {
-                        eyes: eyes::EyesExpression::Happy,
-                        head: head::HeadExpression::Happy,
+                    ExpressionChange {
+                        eyes: Some("happy".to_string()),
+                        head: Some("happy".to_string()),
                     },
                 ),
                 (
                     Key::F12,
-                    ExpressionState {
-                        eyes: eyes::EyesExpression::Tight,
-                        head: head::HeadExpression::Happy,
+                    ExpressionChange {
+                        eyes: Some("tight".to_string()),
+                        head: Some("happy".to_string()),
                     },
                 ),
             ]),
@@ -179,7 +179,8 @@ impl MuniTuberApp {
         }
         .max(0.0);
 
-        let breath_value = (self.start.elapsed().as_secs_f32() * 1.5).sin() + pop_value * POP_AMOUNT;
+        let breath_value =
+            (self.start.elapsed().as_secs_f32() * 1.5).sin() + pop_value * POP_AMOUNT;
         let breath_scale_x = 1.0 - breath_value / 200.0;
         let breath_scale_y = 1.0 + breath_value / 200.0;
 
@@ -195,27 +196,25 @@ impl MuniTuberApp {
         // get some variables
         let should_force_blink = self.hotkey_manager.should_force_blink(ctx);
         if let Some(new_expression) = self.hotkey_manager.get_expression(ctx) {
-            self.expression = *new_expression;
+            self.expression.apply(new_expression)
         }
-        let expression_to_use = self
-            .hotkey_manager
-            .get_temporary_expression(ctx)
-            .unwrap_or(&self.expression);
+        let temporary_expression = self.hotkey_manager.get_temporary_expression(ctx);
+        let head_to_use = temporary_expression
+            .and_then(|e| e.head.as_ref())
+            .unwrap_or(&self.expression.head);
+        let eyes_to_use = temporary_expression
+            .and_then(|e| e.eyes.as_ref())
+            .unwrap_or(&self.expression.eyes);
 
         // draw head and eyes
         let volume = *self.audio_state.volume.lock().unwrap();
-        self.head.paint(
-            ctx,
-            ui,
-            show_body_response.rect,
-            volume,
-            expression_to_use.head,
-        );
+        self.head
+            .paint(ctx, ui, show_body_response.rect, volume, head_to_use);
         self.eyes.paint(
             ctx,
             ui,
             show_body_response.rect,
-            expression_to_use.eyes,
+            eyes_to_use,
             should_force_blink,
         );
     }
@@ -237,18 +236,32 @@ impl eframe::App for MuniTuberApp {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct ExpressionState {
-    /// The current expression of the character.
-    eyes: eyes::EyesExpression,
-    head: head::HeadExpression,
+/// A change in the expression of the character. `None` means no change to the expression.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+pub struct ExpressionChange {
+    eyes: Option<String>,
+    head: Option<String>,
 }
 
-impl Default for ExpressionState {
-    fn default() -> Self {
-        Self {
-            eyes: eyes::EyesExpression::Normal,
-            head: head::HeadExpression::Happy,
+/// The current expression of the character.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+pub struct ExpressionState {
+    eyes: String,
+    head: String,
+}
+
+impl ExpressionState {
+    pub fn apply(&mut self, change: &ExpressionChange) {
+        if let Some(eyes) = &change.eyes {
+            self.eyes = eyes.clone();
         }
+        if let Some(head) = &change.head {
+            self.head = head.clone();
+        }
+    }
+
+    pub fn with(mut self, change: &ExpressionChange) -> Self {
+        self.apply(change);
+        self
     }
 }
