@@ -4,17 +4,16 @@ use std::{
 };
 
 use eframe::{
-    egui::{Context, Image, Ui},
+    egui::{Image, Ui},
     epaint::Rect,
 };
-use egui_extras::RetainedImage;
 
 use crate::POP_DURATION;
 
 /// The minimum time a speaking frame must be visible.
 const MINIMUM_FRAME_TIME: Duration = Duration::from_millis(1000 / 24);
 
-pub struct Head {
+pub struct Head<'a> {
     /// The threshold at which the character is considered to be half speaking, in dBFS.
     half_speak_threshold_dbfs: f32,
 
@@ -25,10 +24,10 @@ pub struct Head {
     yelling_threshold_dbfs: f32,
 
     /// Base images to use for the character's head.
-    expressions: HashMap<String, HeadExpression>,
+    expressions: HashMap<String, HeadExpression<'a>>,
 
     /// The expression to use when an expression is not found.
-    default_expression: HeadExpression,
+    default_expression: HeadExpression<'a>,
 
     /// The current speaking phase.
     speak_phase: SpeakPhase,
@@ -43,15 +42,8 @@ pub struct Head {
     last_speak_start: Instant,
 }
 
-impl Head {
-    pub fn paint(
-        &mut self,
-        ctx: &Context,
-        ui: &mut Ui,
-        rect: Rect,
-        volume: f32,
-        expression_name: &str,
-    ) {
+impl Head<'_> {
+    pub fn paint(&mut self, ui: &mut Ui, rect: Rect, volume: f32, expression_name: &str) {
         // determine head_base to use
         if self.last_phase_change.elapsed() > MINIMUM_FRAME_TIME {
             self.last_speak_phase = self.speak_phase;
@@ -83,7 +75,7 @@ impl Head {
             .unwrap_or(&self.default_expression)
             .get_image(self.speak_phase);
 
-        Image::new(head_base.texture_id(ctx), rect.size()).paint_at(ui, rect);
+        head_base.paint_at(ui, rect);
     }
 
     pub fn get_last_speak_start(&self) -> &Instant {
@@ -91,130 +83,93 @@ impl Head {
     }
 }
 
-impl Default for Head {
+impl Default for Head<'_> {
     fn default() -> Self {
         Self {
-            half_speak_threshold_dbfs: -30.0,
-            full_speak_threshold_dbfs: -20.0,
-            yelling_threshold_dbfs: 5.0,
+            half_speak_threshold_dbfs: -35.0,
+            full_speak_threshold_dbfs: -23.0,
+            yelling_threshold_dbfs: 0.,
 
             expressions: HashMap::from([
                 (
                     "happy".to_string(),
                     HeadExpression {
-                        idle: RetainedImage::from_image_bytes(
-                            "head_happy_quiet",
+                        idle: Image::from_bytes(
+                            "bytes://head_happy_quiet",
                             include_bytes!("assets/head_happy_quiet.png"),
-                        )
-                        .unwrap(),
-                        half_speak: Some(
-                            RetainedImage::from_image_bytes(
-                                "head_happy_halfspeak",
-                                include_bytes!("assets/head_happy_halfspeak.png"),
-                            )
-                            .unwrap(),
                         ),
-                        full_speak: Some(
-                            RetainedImage::from_image_bytes(
-                                "head_happy_speak",
-                                include_bytes!("assets/head_happy_speak.png"),
-                            )
-                            .unwrap(),
-                        ),
+                        half_speak: Some(Image::from_bytes(
+                            "bytes://head_happy_halfspeak",
+                            include_bytes!("assets/head_happy_halfspeak.png"),
+                        )),
+                        full_speak: Some(Image::from_bytes(
+                            "bytes://head_happy_speak",
+                            include_bytes!("assets/head_happy_speak.png"),
+                        )),
                         yell: None,
                     },
                 ),
                 (
                     "frown".to_string(),
                     HeadExpression {
-                        idle: RetainedImage::from_image_bytes(
-                            "head_frown_quiet",
+                        idle: Image::from_bytes(
+                            "bytes://head_frown_quiet",
                             include_bytes!("assets/head_frown_quiet.png"),
-                        )
-                        .unwrap(),
-                        half_speak: Some(
-                            RetainedImage::from_image_bytes(
-                                "head_frown_halfspeak",
-                                include_bytes!("assets/head_frown_halfspeak.png"),
-                            )
-                            .unwrap(),
                         ),
-                        full_speak: Some(
-                            RetainedImage::from_image_bytes(
-                                "head_frown_speak",
-                                include_bytes!("assets/head_frown_speak.png"),
-                            )
-                            .unwrap(),
-                        ),
-                        yell: Some(
-                            RetainedImage::from_image_bytes(
-                                "head_frown_yell",
-                                include_bytes!("assets/head_frown_yell.png"),
-                            )
-                            .unwrap(),
-                        ),
+                        half_speak: Some(Image::from_bytes(
+                            "bytes://head_frown_halfspeak",
+                            include_bytes!("assets/head_frown_halfspeak.png"),
+                        )),
+                        full_speak: Some(Image::from_bytes(
+                            "bytes://head_frown_speak",
+                            include_bytes!("assets/head_frown_speak.png"),
+                        )),
+                        yell: Some(Image::from_bytes(
+                            "bytes://head_frown_yell",
+                            include_bytes!("assets/head_frown_yell.png"),
+                        )),
                     },
                 ),
                 (
                     "wavy".to_string(),
                     HeadExpression {
-                        idle: RetainedImage::from_image_bytes(
-                            "head_wavy_quiet",
+                        idle: Image::from_bytes(
+                            "bytes://head_wavy_quiet",
                             include_bytes!("assets/head_wavy_quiet.png"),
-                        )
-                        .unwrap(),
-                        half_speak: Some(
-                            RetainedImage::from_image_bytes(
-                                "head_wavy_halfspeak",
-                                include_bytes!("assets/head_wavy_halfspeak.png"),
-                            )
-                            .unwrap(),
                         ),
-                        full_speak: Some(
-                            RetainedImage::from_image_bytes(
-                                "head_wavy_speak",
-                                include_bytes!("assets/head_wavy_speak.png"),
-                            )
-                            .unwrap(),
-                        ),
-                        yell: Some(
-                            RetainedImage::from_image_bytes(
-                                "head_wavy_yell",
-                                include_bytes!("assets/head_wavy_yell.png"),
-                            )
-                            .unwrap(),
-                        ),
+                        half_speak: Some(Image::from_bytes(
+                            "bytes://head_wavy_halfspeak",
+                            include_bytes!("assets/head_wavy_halfspeak.png"),
+                        )),
+                        full_speak: Some(Image::from_bytes(
+                            "bytes://head_wavy_speak",
+                            include_bytes!("assets/head_wavy_speak.png"),
+                        )),
+                        yell: Some(Image::from_bytes(
+                            "bytes://head_wavy_yell",
+                            include_bytes!("assets/head_wavy_yell.png"),
+                        )),
                     },
                 ),
             ]),
 
             default_expression: HeadExpression {
-                idle: RetainedImage::from_image_bytes(
-                    "head_default_quiet",
+                idle: Image::from_bytes(
+                    "bytes://head_default_quiet",
                     include_bytes!("assets/head_happy_quiet.png"),
-                )
-                .unwrap(),
-                half_speak: Some(
-                    RetainedImage::from_image_bytes(
-                        "head_default_halfspeak",
-                        include_bytes!("assets/head_happy_halfspeak.png"),
-                    )
-                    .unwrap(),
                 ),
-                full_speak: Some(
-                    RetainedImage::from_image_bytes(
-                        "head_default_speak",
-                        include_bytes!("assets/head_happy_speak.png"),
-                    )
-                    .unwrap(),
-                ),
-                yell: Some(
-                    RetainedImage::from_image_bytes(
-                        "head_default_yell",
-                        include_bytes!("assets/head_happy_yell.png"),
-                    )
-                    .unwrap(),
-                ),
+                half_speak: Some(Image::from_bytes(
+                    "bytes://head_default_halfspeak",
+                    include_bytes!("assets/head_happy_halfspeak.png"),
+                )),
+                full_speak: Some(Image::from_bytes(
+                    "bytes://head_default_speak",
+                    include_bytes!("assets/head_happy_speak.png"),
+                )),
+                yell: Some(Image::from_bytes(
+                    "bytes://head_default_yell",
+                    include_bytes!("assets/head_happy_yell.png"),
+                )),
             },
 
             speak_phase: SpeakPhase::Quiet,
@@ -233,15 +188,15 @@ enum SpeakPhase {
     Yell,
 }
 
-pub struct HeadExpression {
-    idle: RetainedImage,
-    half_speak: Option<RetainedImage>,
-    full_speak: Option<RetainedImage>,
-    yell: Option<RetainedImage>,
+pub struct HeadExpression<'a> {
+    idle: Image<'a>,
+    half_speak: Option<Image<'a>>,
+    full_speak: Option<Image<'a>>,
+    yell: Option<Image<'a>>,
 }
 
-impl HeadExpression {
-    fn get_image(&self, phase: SpeakPhase) -> &RetainedImage {
+impl HeadExpression<'_> {
+    fn get_image(&self, phase: SpeakPhase) -> &Image {
         match phase {
             SpeakPhase::Quiet => &self.idle,
             SpeakPhase::HalfSpeak => self.get_half_speak_image(),
@@ -250,17 +205,17 @@ impl HeadExpression {
         }
     }
 
-    pub fn get_half_speak_image(&self) -> &RetainedImage {
+    pub fn get_half_speak_image(&self) -> &Image {
         self.half_speak.as_ref().unwrap_or(&self.idle)
     }
 
-    pub fn get_full_speak_image(&self) -> &RetainedImage {
+    pub fn get_full_speak_image(&self) -> &Image {
         self.full_speak
             .as_ref()
             .unwrap_or(self.get_half_speak_image())
     }
 
-    pub fn get_yell_image(&self) -> &RetainedImage {
+    pub fn get_yell_image(&self) -> &Image {
         self.yell.as_ref().unwrap_or(self.get_full_speak_image())
     }
 }

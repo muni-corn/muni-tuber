@@ -5,26 +5,28 @@ mod keys;
 
 use cpal::Stream;
 use eframe::{
-    egui::{self, CentralPanel, Context, Key, Ui, Vec2},
+    egui::{self, CentralPanel, Context, Image, Key, Ui, Vec2},
     epaint::Color32,
     Frame,
 };
-use egui_extras::RetainedImage;
 use eyes::Eyes;
 use head::Head;
 use std::{collections::HashMap, time::Instant};
 
-fn main() -> Result<(), eframe::Error> {
+fn main() -> eframe::Result {
     let options = eframe::NativeOptions::default();
 
     eframe::run_native(
         "muni-tuber",
         options,
-        Box::new(|_cc| Box::<MuniTuberApp>::default()),
+        Box::new(|cc| {
+            egui_extras::install_image_loaders(&cc.egui_ctx);
+            Ok(Box::<MuniTuberApp>::default())
+        }),
     )
 }
 
-struct MuniTuberApp {
+struct MuniTuberApp<'a> {
     /// The time at which the app started.
     start: Instant,
 
@@ -32,13 +34,13 @@ struct MuniTuberApp {
     audio_state: audio::AudioState,
 
     /// The image of the body to use.
-    body: RetainedImage,
+    body: Image<'a>,
 
     /// The head of the character
-    head: Head,
+    head: Head<'a>,
 
     /// The eyes state of the character.
-    eyes: Eyes,
+    eyes: Eyes<'a>,
 
     /// The expression of the character.
     expression: ExpressionState,
@@ -50,7 +52,7 @@ struct MuniTuberApp {
     _audio_stream: Stream,
 }
 
-impl Default for MuniTuberApp {
+impl Default for MuniTuberApp<'_> {
     fn default() -> Self {
         let (audio_state, _audio_stream) = audio::start_default_stream();
 
@@ -150,8 +152,7 @@ impl Default for MuniTuberApp {
             audio_state,
             _audio_stream,
 
-            body: RetainedImage::from_image_bytes("body", include_bytes!("assets/body.png"))
-                .unwrap(),
+            body: Image::from_bytes("bytes://body", include_bytes!("assets/body.png")),
 
             head: Default::default(),
             eyes: Default::default(),
@@ -167,7 +168,7 @@ const POP_DURATION: f32 = 0.25;
 /// The influence of the pop animation on the character.
 const POP_AMOUNT: f32 = 2.0;
 
-impl MuniTuberApp {
+impl MuniTuberApp<'_> {
     fn paint(&mut self, ctx: &Context, ui: &mut Ui) {
         let pop_value = {
             // quadratic function
@@ -185,13 +186,19 @@ impl MuniTuberApp {
         let breath_scale_y = 1.0 + breath_value / 200.0;
 
         // draw body
-        let image_to_ui_height_ratio = ui.max_rect().height() / self.body.size_vec2().y;
-        let show_body_response = self.body.show_size(
-            ui,
-            image_to_ui_height_ratio
-                * self.body.size_vec2()
-                * Vec2::new(breath_scale_x, breath_scale_y),
+        // let image_to_ui_height_ratio = ui.max_rect().height() / body_size.y;
+        let Some(body_size) = self.body.load_and_calc_size(ui, ui.max_rect().size()) else {
+            return;
+        };
+
+        let response = ui.add(
+            self.body
+                .clone()
+                .maintain_aspect_ratio(false)
+                .fit_to_exact_size(body_size * Vec2::new(breath_scale_x, breath_scale_y)),
         );
+
+        let rect = response.rect;
 
         // get some variables
         let should_force_blink = self.hotkey_manager.should_force_blink(ctx);
@@ -208,19 +215,12 @@ impl MuniTuberApp {
 
         // draw head and eyes
         let volume = *self.audio_state.volume.lock().unwrap();
-        self.head
-            .paint(ctx, ui, show_body_response.rect, volume, head_to_use);
-        self.eyes.paint(
-            ctx,
-            ui,
-            show_body_response.rect,
-            eyes_to_use,
-            should_force_blink,
-        );
+        self.head.paint(ui, rect, volume, head_to_use);
+        self.eyes.paint(ui, rect, eyes_to_use, should_force_blink);
     }
 }
 
-impl eframe::App for MuniTuberApp {
+impl eframe::App for MuniTuberApp<'_> {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         CentralPanel::default()
             .frame(egui::Frame {

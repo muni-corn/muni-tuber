@@ -1,8 +1,7 @@
 use eframe::{
-    egui::{Context, Image, Ui},
+    egui::{Image, Ui},
     epaint::Rect,
 };
-use egui_extras::RetainedImage;
 use std::{
     collections::HashMap,
     time::{Duration, Instant},
@@ -17,7 +16,7 @@ const BLINK_MAX_DELAY: f32 = 5.0;
 /// The duration of a blink, in seconds.
 const BLINK_SECONDS: f32 = 0.2;
 
-pub struct Eyes {
+pub struct Eyes<'a> {
     /// Instant to keep track of when the character last changed phases.
     last_blink: Instant,
 
@@ -31,13 +30,13 @@ pub struct Eyes {
     blink_phase: BlinkPhase,
 
     /// Images to fallback to when an expression is not found.
-    default_expression: EyesExpression,
+    default_expression: EyesExpression<'a>,
 
     /// Expression images to use when the character's eyes are open.
-    expressions: HashMap<String, EyesExpression>,
+    expressions: HashMap<String, EyesExpression<'a>>,
 }
 
-impl Default for Eyes {
+impl Default for Eyes<'_> {
     fn default() -> Self {
         let now = Instant::now();
         let next_blink_time = Self::random_blink_delay();
@@ -48,107 +47,85 @@ impl Default for Eyes {
             next_blink_time,
             blink_phase: BlinkPhase::Open,
             default_expression: EyesExpression {
-                idle: RetainedImage::from_image_bytes(
-                    "eyes_default_open",
+                idle: Image::from_bytes(
+                    "bytes://eyes_default_open",
                     include_bytes!("assets/eyes_normal_open.png"),
-                )
-                .unwrap(),
-                blink: Some(
-                    RetainedImage::from_image_bytes(
-                        "eyes_default_closed",
-                        include_bytes!("assets/eyes_normal_closed.png"),
-                    )
-                    .unwrap(),
                 ),
+                blink: Some(Image::from_bytes(
+                    "bytes://eyes_default_closed",
+                    include_bytes!("assets/eyes_normal_closed.png"),
+                )),
             },
             expressions: HashMap::from([
                 (
                     "sad".to_string(),
                     EyesExpression {
-                        idle: RetainedImage::from_image_bytes(
-                            "eyes_sad_open",
+                        idle: Image::from_bytes(
+                            "bytes://eyes_sad_open",
                             include_bytes!("assets/eyes_sad_open.png"),
-                        )
-                        .unwrap(),
-                        blink: Some(
-                            RetainedImage::from_image_bytes(
-                                "eyes_sad_closed",
-                                include_bytes!("assets/eyes_sad_closed.png"),
-                            )
-                            .unwrap(),
                         ),
+                        blink: Some(Image::from_bytes(
+                            "bytes://eyes_sad_closed",
+                            include_bytes!("assets/eyes_sad_closed.png"),
+                        )),
                     },
                 ),
                 (
                     "angry".to_string(),
                     EyesExpression {
-                        idle: RetainedImage::from_image_bytes(
-                            "eyes_angry_open",
+                        idle: Image::from_bytes(
+                            "bytes://eyes_angry_open",
                             include_bytes!("assets/eyes_angry_open.png"),
-                        )
-                        .unwrap(),
-                        blink: Some(
-                            RetainedImage::from_image_bytes(
-                                "eyes_angry_closed",
-                                include_bytes!("assets/eyes_angry_closed.png"),
-                            )
-                            .unwrap(),
                         ),
+                        blink: Some(Image::from_bytes(
+                            "bytes://eyes_angry_closed",
+                            include_bytes!("assets/eyes_angry_closed.png"),
+                        )),
                     },
                 ),
                 (
                     "wide".to_string(),
                     EyesExpression {
-                        idle: RetainedImage::from_image_bytes(
-                            "eyes_wide_open",
+                        idle: Image::from_bytes(
+                            "bytes://eyes_wide_open",
                             include_bytes!("assets/eyes_wide.png"),
-                        )
-                        .unwrap(),
-                        blink: Some(
-                            RetainedImage::from_image_bytes(
-                                "eyes_tight_shut",
-                                include_bytes!("assets/eyes_tight.png"),
-                            )
-                            .unwrap(),
                         ),
+                        blink: Some(Image::from_bytes(
+                            "bytes://eyes_tight_shut",
+                            include_bytes!("assets/eyes_tight.png"),
+                        )),
                     },
                 ),
                 (
                     "dreamy".to_string(),
                     EyesExpression {
-                        idle: RetainedImage::from_image_bytes(
-                            "eyes_dreamy_open",
+                        idle: Image::from_bytes(
+                            "bytes://eyes_dreamy_open",
                             include_bytes!("assets/eyes_dreamy_open.png"),
-                        )
-                        .unwrap(),
-                        blink: Some(
-                            RetainedImage::from_image_bytes(
-                                "eyes_dreamy_closed",
-                                include_bytes!("assets/eyes_dreamy_closed.png"),
-                            )
-                            .unwrap(),
                         ),
+                        blink: Some(Image::from_bytes(
+                            "bytes://eyes_dreamy_closed",
+                            include_bytes!("assets/eyes_dreamy_closed.png"),
+                        )),
                     },
                 ),
                 (
                     "happy".to_string(),
                     EyesExpression {
-                        idle: RetainedImage::from_image_bytes(
-                            "eyes_smiling",
+                        idle: Image::from_bytes(
+                            "bytes://eyes_smiling",
                             include_bytes!("assets/eyes_happy.png"),
-                        )
-                        .unwrap(),
+                        ),
                         blink: None,
                     },
                 ),
                 (
                     "tight".to_string(),
                     EyesExpression {
-                        idle: RetainedImage::from_image_bytes(
-                            "eyes_tight",
+                        idle: Image::from_bytes(
+                            "bytes://eyes_tight",
                             include_bytes!("assets/eyes_tight.png"),
-                        )
-                        .unwrap(),
+                        ),
                         blink: None,
                     },
                 ),
@@ -157,7 +134,7 @@ impl Default for Eyes {
     }
 }
 
-impl Eyes {
+impl Eyes<'_> {
     /// Returns a random duration between `BLINK_MIN_DELAY` and `BLINK_MAX_DELAY`.
     fn random_blink_delay() -> Duration {
         let delay = rand::random::<f32>() * (BLINK_MAX_DELAY - BLINK_MIN_DELAY) + BLINK_MIN_DELAY;
@@ -186,14 +163,7 @@ impl Eyes {
 
     /// Paints the eyes over the given rectangle. The rectangle should be the rectangle over which
     /// the head base was painted.
-    pub fn paint(
-        &mut self,
-        ctx: &Context,
-        ui: &mut Ui,
-        rect: Rect,
-        expression_name: &str,
-        force_shut: bool,
-    ) {
+    pub fn paint(&mut self, ui: &mut Ui, rect: Rect, expression_name: &str, force_shut: bool) {
         // blink now if our expression has changed
         if expression_name != self.last_expression_name {
             self.last_blink = Instant::now();
@@ -216,7 +186,7 @@ impl Eyes {
         };
 
         // paint the image over the given rectangle
-        Image::new(img.texture_id(ctx), rect.size()).paint_at(ui, rect)
+        img.paint_at(ui, rect)
     }
 }
 
@@ -225,7 +195,7 @@ enum BlinkPhase {
     Closed,
 }
 
-pub struct EyesExpression {
-    pub idle: RetainedImage,
-    pub blink: Option<RetainedImage>,
+pub struct EyesExpression<'a> {
+    pub idle: Image<'a>,
+    pub blink: Option<Image<'a>>,
 }
