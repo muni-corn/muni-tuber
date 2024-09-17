@@ -27,9 +27,9 @@
           inherit (rust) cargo rustc;
         };
 
-        nativeBuildInputs = with pkgs; [
+        nativeBuildInputs = [
           rust.toolchain
-          pkg-config
+          pkgs.pkg-config
         ];
         buildInputs = with pkgs; [
           alsa-lib
@@ -69,12 +69,11 @@
         };
 
         # `nix develop`
-        devShell = with pkgs;
-          mkShell {
-            inherit nativeBuildInputs buildInputs;
-            packages = [rust.rust-analyzer];
-            LD_LIBRARY_PATH = lib.makeLibraryPath buildInputs;
-          };
+        devShell = pkgs.mkShell {
+          inherit nativeBuildInputs buildInputs;
+          packages = [rust.rust-analyzer pkgs.cargo-outdated];
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
+        };
       });
   in
     out
