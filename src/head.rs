@@ -86,9 +86,9 @@ impl Head<'_> {
 impl Default for Head<'_> {
     fn default() -> Self {
         Self {
-            half_speak_threshold_dbfs: -35.0,
-            full_speak_threshold_dbfs: -23.0,
-            yelling_threshold_dbfs: 0.,
+            half_speak_threshold_dbfs: -46.0,
+            full_speak_threshold_dbfs: -30.0,
+            yelling_threshold_dbfs: -5.0,
 
             expressions: HashMap::from([
                 (
