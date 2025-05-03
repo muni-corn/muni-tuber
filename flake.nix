@@ -8,74 +8,82 @@
     utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    utils,
-    fenix,
-    naersk,
-  }: let
-    appName = "muni-tuber";
+  outputs =
+    {
+      self,
+      nixpkgs,
+      utils,
+      fenix,
+      naersk,
+    }:
+    let
+      appName = "muni-tuber";
 
-    out =
-      utils.lib.eachDefaultSystem
-      (system: let
-        pkgs = import nixpkgs {inherit system;};
+      out = utils.lib.eachDefaultSystem (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
 
-        rust = fenix.packages.${system}.stable;
-        naersk-lib = naersk.lib."${system}".override {
-          inherit (rust) cargo rustc;
-        };
-
-        nativeBuildInputs = [
-          rust.toolchain
-          pkgs.pkg-config
-        ];
-        buildInputs = with pkgs; [
-          alsa-lib
-          udev
-          vulkan-loader
-
-          # x11
-          xorg.libX11
-          xorg.libXcursor
-          xorg.libXi
-          xorg.libXrandr
-
-          # wayland
-          libxkbcommon
-          wayland
-
-          # gl
-          libGL
-          libGLU
-        ];
-      in {
-        # `nix build`
-        defaultPackage = naersk-lib.buildPackage {
-          pname = appName;
-          root = builtins.path {
-            path = ./.;
-            name = "${appName}-src";
+          rust = fenix.packages.${system}.stable;
+          naersk-lib = naersk.lib."${system}".override {
+            inherit (rust) cargo rustc;
           };
-          inherit nativeBuildInputs buildInputs;
-        };
 
-        # `nix run`
-        defaultApp = utils.lib.mkApp {
-          name = appName;
-          drv = self.defaultPackage."${system}";
-          exePath = "/bin/${appName}";
-        };
+          nativeBuildInputs = [
+            rust.toolchain
+            pkgs.pkg-config
+          ];
+          buildInputs = with pkgs; [
+            alsa-lib
+            pkg-config
+            udev
+            vulkan-loader
 
-        # `nix develop`
-        devShell = pkgs.mkShell {
-          inherit nativeBuildInputs buildInputs;
-          packages = [rust.rust-analyzer pkgs.cargo-outdated];
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
-        };
-      });
-  in
+            # x11
+            xorg.libX11
+            xorg.libXcursor
+            xorg.libXi
+            xorg.libXrandr
+
+            # wayland
+            libxkbcommon
+            wayland
+
+            # gl
+            libGL
+            libGLU
+          ];
+        in
+        {
+          # `nix build`
+          defaultPackage = naersk-lib.buildPackage {
+            pname = appName;
+            root = builtins.path {
+              path = ./.;
+              name = "${appName}-src";
+            };
+            inherit nativeBuildInputs buildInputs;
+          };
+
+          # `nix run`
+          defaultApp = utils.lib.mkApp {
+            name = appName;
+            drv = self.defaultPackage."${system}";
+            exePath = "/bin/${appName}";
+          };
+
+          # `nix develop`
+          devShell = pkgs.mkShell {
+            inherit nativeBuildInputs buildInputs;
+            packages = [
+              rust.rust-analyzer
+              pkgs.cargo-outdated
+            ];
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
+          };
+        }
+      );
+    in
     out
     // {
       overlay = final: prev: {
