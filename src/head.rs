@@ -196,7 +196,7 @@ pub struct HeadExpression<'a> {
 }
 
 impl HeadExpression<'_> {
-    fn get_image(&self, phase: SpeakPhase) -> &Image {
+    fn get_image(&self, phase: SpeakPhase) -> &Image<'_> {
         match phase {
             SpeakPhase::Quiet => &self.idle,
             SpeakPhase::HalfSpeak => self.get_half_speak_image(),
@@ -205,17 +205,17 @@ impl HeadExpression<'_> {
         }
     }
 
-    pub fn get_half_speak_image(&self) -> &Image {
+    pub fn get_half_speak_image(&self) -> &Image<'_> {
         self.half_speak.as_ref().unwrap_or(&self.idle)
     }
 
-    pub fn get_full_speak_image(&self) -> &Image {
+    pub fn get_full_speak_image(&self) -> &Image<'_> {
         self.full_speak
             .as_ref()
             .unwrap_or(self.get_half_speak_image())
     }
 
-    pub fn get_yell_image(&self) -> &Image {
+    pub fn get_yell_image(&self) -> &Image<'_> {
         self.yell.as_ref().unwrap_or(self.get_full_speak_image())
     }
 }

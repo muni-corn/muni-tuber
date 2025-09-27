@@ -5,9 +5,9 @@ mod keys;
 
 use cpal::Stream;
 use eframe::{
+    Frame,
     egui::{self, CentralPanel, Context, Image, Key, Ui, Vec2},
     epaint::Color32,
-    Frame,
 };
 use eyes::Eyes;
 use head::Head;
@@ -174,7 +174,7 @@ impl MuniTuberApp<'_> {
             // quadratic function
             let x = self.head.get_last_speak_start().elapsed().as_secs_f32();
             let a = -4.0 / POP_DURATION.powi(2);
-            let b = -1.0 * a * POP_DURATION;
+            let b = -a * POP_DURATION;
 
             a * x.powi(2) + b * x
         }
