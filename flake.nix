@@ -1,38 +1,70 @@
 {
-  description = "muni-tuber";
+  description = "munituber";
 
   inputs = {
-    naersk.url = "github:nmattia/naersk/master";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    fenix.url = "github:nix-community/fenix";
-    utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+
+    devenv = {
+      url = "github:cachix/devenv";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
+
+    git-hooks-nix = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    rust-flake = {
+      url = "github:juspay/rust-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
-    {
-      self,
-      nixpkgs,
-      utils,
-      fenix,
-      naersk,
-    }:
-    let
-      appName = "muni-tuber";
+    inputs:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
 
-      out = utils.lib.eachDefaultSystem (
-        system:
+      imports = [
+        inputs.git-hooks-nix.flakeModule
+        inputs.devenv.flakeModule
+        inputs.rust-flake.flakeModules.default
+        inputs.rust-flake.flakeModules.nixpkgs
+        inputs.treefmt-nix.flakeModule
+      ];
+
+      perSystem =
+        {
+          self',
+          config,
+          lib,
+          pkgs,
+          system,
+          ...
+        }:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pname = "munituber";
 
-          rust = fenix.packages.${system}.stable;
-          naersk-lib = naersk.lib."${system}".override {
-            inherit (rust) cargo rustc;
-          };
-
-          nativeBuildInputs = [
-            rust.toolchain
-            pkgs.pkg-config
-          ];
           buildInputs = with pkgs; [
             alsa-lib
             pkg-config
@@ -53,41 +85,108 @@
             libGL
             libGLU
           ];
+          nativeBuildInputs = [ ];
         in
         {
-          # `nix build`
-          defaultPackage = naersk-lib.buildPackage {
-            pname = appName;
-            root = builtins.path {
-              path = ./.;
-              name = "${appName}-src";
+          # rust setup
+          devenv.shells.default = {
+            env = {
+              RUST_LOG = "info,${pname}=debug";
+              LD_LIBRARY_PATH = "$LD_LIBRARY_PATH:${lib.makeLibraryPath buildInputs}";
             };
-            inherit nativeBuildInputs buildInputs;
-          };
 
-          # `nix run`
-          defaultApp = utils.lib.mkApp {
-            name = appName;
-            drv = self.defaultPackage."${system}";
-            exePath = "/bin/${appName}";
-          };
+            languages.rust = {
+              enable = true;
+              channel = "nightly";
+              mold.enable = true;
+            };
 
-          # `nix develop`
-          devShell = pkgs.mkShell {
-            inherit nativeBuildInputs buildInputs;
             packages = [
-              rust.rust-analyzer
+              config.treefmt.build.wrapper
               pkgs.cargo-outdated
-            ];
-            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
+            ]
+            ++ buildInputs
+            ++ nativeBuildInputs
+            ++ (builtins.attrValues config.treefmt.build.programs);
+
+            # git hooks
+            git-hooks.hooks = {
+              # commit linting
+              commitlint-rs =
+                let
+                  config = pkgs.writers.writeYAML "commitlintrc.yml" {
+                    rules = {
+                      description-empty.level = "error";
+                      description-format = {
+                        level = "error";
+                        format = "^[a-z].*$";
+                      };
+                      description-max-length = {
+                        level = "error";
+                        length = 72;
+                      };
+                      scope-max-length = {
+                        level = "warning";
+                        length = 10;
+                      };
+                      scope-empty.level = "warning";
+                      type = {
+                        level = "error";
+                        options = [
+                          "build"
+                          "chore"
+                          "ci"
+                          "docs"
+                          "feat"
+                          "fix"
+                          "perf"
+                          "refactor"
+                          "style"
+                          "test"
+                        ];
+                      };
+                    };
+                  };
+
+                in
+                {
+                  enable = true;
+                  name = "commitlint-rs";
+                  package = pkgs.commitlint-rs;
+                  description = "Validate commit messages with commitlint-rs";
+                  entry = "${pkgs.lib.getExe pkgs.commitlint-rs} -g ${config} -e";
+                  always_run = true;
+                  stages = [ "commit-msg" ];
+                };
+
+              # format on commit
+              treefmt = {
+                enable = true;
+                packageOverrides.treefmt = config.treefmt.build.wrapper;
+              };
+            };
           };
-        }
-      );
-    in
-    out
-    // {
-      overlay = final: prev: {
-        ${appName} = self.defaultPackage.${prev.system};
-      };
+
+          # rust build settings
+          rust-project = {
+            # use the same rust toolchain from the dev shell for consistency
+            toolchain = config.devenv.shells.default.languages.rust.toolchainPackage;
+
+            # specify dependencies
+            defaults.perCrate.crane.args = {
+              inherit nativeBuildInputs buildInputs;
+            };
+          };
+
+          # formatting
+          treefmt.programs = {
+            nixfmt.enable = true;
+            rustfmt.enable = true;
+            taplo.enable = true;
+          };
+
+          # package definitions
+          packages.default = config.rust-project.crates.${pname}.crane.outputs.packages.${pname};
+        };
     };
 }
