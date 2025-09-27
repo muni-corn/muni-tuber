@@ -1,3 +1,5 @@
 /target
+.devenv/
 .direnv/
+.pre-commit-config.yaml
 src/assets/*.png
