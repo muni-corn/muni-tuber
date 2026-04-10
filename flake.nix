@@ -1,8 +1,13 @@
 {
-  description = "munituber";
+  description = "muni-tuber";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:cachix/devenv-nixpkgs/rolling";
+
+    crate2nix = {
+      url = "github:nix-community/crate2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     devenv = {
       url = "github:cachix/devenv";
@@ -14,14 +19,9 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
 
-    git-hooks-nix = {
-      url = "github:cachix/git-hooks.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    rust-flake = {
-      url = "github:juspay/rust-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
+    musicaloft-shell = {
+      url = "github:musicaloft/musicaloft-shell";
+      flake = false;
     };
 
     rust-overlay = {
@@ -45,148 +45,18 @@
         "aarch64-darwin"
       ];
 
-      imports = [
-        inputs.git-hooks-nix.flakeModule
-        inputs.devenv.flakeModule
-        inputs.rust-flake.flakeModules.default
-        inputs.rust-flake.flakeModules.nixpkgs
-        inputs.treefmt-nix.flakeModule
-      ];
+      imports = [ inputs.devenv.flakeModule ];
 
       perSystem =
+        { config, ... }:
         {
-          self',
-          config,
-          lib,
-          pkgs,
-          system,
-          ...
-        }:
-        let
-          pname = "munituber";
-
-          buildInputs = with pkgs; [
-            alsa-lib
-            pkg-config
-            udev
-            vulkan-loader
-
-            # x11
-            xorg.libX11
-            xorg.libXcursor
-            xorg.libXi
-            xorg.libXrandr
-
-            # wayland
-            libxkbcommon
-            wayland
-
-            # gl
-            libGL
-            libGLU
+          devenv.shells.default.imports = [
+            "${inputs.musicaloft-shell}/devenv.nix"
+            ./devenv.nix
           ];
-          nativeBuildInputs = [ ];
-        in
-        {
-          # rust setup
-          devenv.shells.default = {
-            env = {
-              RUST_LOG = "info,${pname}=debug";
-              LD_LIBRARY_PATH = "$LD_LIBRARY_PATH:${lib.makeLibraryPath buildInputs}";
-            };
 
-            languages.rust = {
-              enable = true;
-              channel = "nightly";
-              mold.enable = true;
-            };
-
-            packages = [
-              config.treefmt.build.wrapper
-              pkgs.cargo-outdated
-            ]
-            ++ buildInputs
-            ++ nativeBuildInputs
-            ++ (builtins.attrValues config.treefmt.build.programs);
-
-            # git hooks
-            git-hooks.hooks = {
-              # commit linting
-              commitlint-rs =
-                let
-                  config = pkgs.writers.writeYAML "commitlintrc.yml" {
-                    rules = {
-                      description-empty.level = "error";
-                      description-format = {
-                        level = "error";
-                        format = "^[a-z].*$";
-                      };
-                      description-max-length = {
-                        level = "error";
-                        length = 72;
-                      };
-                      scope-max-length = {
-                        level = "warning";
-                        length = 10;
-                      };
-                      scope-empty.level = "warning";
-                      type = {
-                        level = "error";
-                        options = [
-                          "build"
-                          "chore"
-                          "ci"
-                          "docs"
-                          "feat"
-                          "fix"
-                          "perf"
-                          "refactor"
-                          "style"
-                          "test"
-                        ];
-                      };
-                    };
-                  };
-
-                in
-                {
-                  enable = true;
-                  name = "commitlint-rs";
-                  package = pkgs.commitlint-rs;
-                  description = "Validate commit messages with commitlint-rs";
-                  entry = "${pkgs.lib.getExe pkgs.commitlint-rs} -g ${config} -e";
-                  always_run = true;
-                  stages = [ "commit-msg" ];
-                };
-
-              # format on commit
-              treefmt = {
-                enable = true;
-                packageOverrides.treefmt = config.treefmt.build.wrapper;
-              };
-            };
-          };
-
-          # rust build settings
-          rust-project = {
-            # use the same rust toolchain from the dev shell for consistency
-            toolchain = config.devenv.shells.default.languages.rust.toolchainPackage;
-
-            # specify dependencies
-            defaults.perCrate.crane.args = {
-              inherit nativeBuildInputs buildInputs;
-            };
-          };
-
-          # formatting
-          treefmt.programs = {
-            nixfmt.enable = true;
-            rustfmt.enable = true;
-            taplo.enable = true;
-          };
-
-          # package definitions
-          packages.default = config.rust-project.crates.${pname}.crane.outputs.packages.${pname};
+          # package build
+          packages = config.devenv.shells.default.outputs;
         };
     };
 }
